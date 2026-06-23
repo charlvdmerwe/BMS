@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     }
     
     // Get all booked slots for this date
-    $stmt = $mysqli->prepare("SELECT `Time` FROM `{$dbTable}` WHERE `Date` = ? AND `Complete` = 0");
+    $stmt = $mysqli->prepare("SELECT `Time` FROM `{$dbTable}` WHERE `Date` = ?");
     if (!$stmt) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Database error.']);
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     
     $bookedSlots = [];
     while ($row = $result->fetch_assoc()) {
-        $bookedSlots[] = $row['Time'];
+        $bookedSlots[] = substr($row['Time'], 0, 5);
     }
     
     $stmt->close();
@@ -761,9 +761,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
           <p>Fill in your details and pick a slot. We don't take payment online — your request is sent straight to the salon to confirm.</p>
           <ul>
             <li>Choose your service &amp; preferred time</li>
-            <li>Send the request via WhatsApp or copy it</li>
-            <li>We confirm by phone or WhatsApp</li>
-            <li>No-shows: please give us a call to cancel</li>
+            <li>Please give us a call to cancel</li>
           </ul>
         </div>
         <form class="booking-form" id="bookingForm">
@@ -798,6 +796,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             <div class="slot-grid" id="slotGrid" role="group" aria-label="Preferred time">
               <!-- slots injected by JS -->
             </div>
+            <div id="slotMessage" style="display:none; margin-top:10px; font-family:'Space Mono',monospace; font-size:0.78rem; color:var(--clay);">This day is fully booked — please choose another date.</div>
             <input type="hidden" id="bf-time" name="time">
           </div>
           <div class="field">
@@ -901,11 +900,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
   // Function to update available slots based on date
   async function updateAvailableSlots(dateStr) {
     if (!dateStr) {
-      // Reset all slots if no date selected
       allSlots.forEach(time => {
         slotButtons[time].disabled = false;
         slotButtons[time].classList.remove('booked', 'selected');
       });
+      document.getElementById('slotMessage').style.display = 'none';
       return;
     }
 
@@ -933,11 +932,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
           }
         });
         
-        // If date is fully booked, disable the date field for future selections
-        if (data.isFullyBooked) {
-          dateInput.dataset.fullyBooked = dateStr;
-        }
-        
+        const slotMsg = document.getElementById('slotMessage');
+        slotMsg.style.display = data.isFullyBooked ? 'block' : 'none';
+
         // Clear selected slot if it was in the booked list
         if (selectedSlot && bookedSlotsForDate.includes(selectedSlot)) {
           selectedSlot = null;
@@ -953,36 +950,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
   dateInput.addEventListener('change', (e) => {
     updateAvailableSlots(e.target.value);
   });
-
-  // Initial load - disable fully booked dates
-  async function disableFullyBookedDates() {
-    try {
-      // Get all dates to check which ones are fully booked
-      const nextDays = 90; // Check next 90 days
-      const fullyBookedDates = new Set();
-      
-      for (let i = 0; i < nextDays; i++) {
-        const checkDate = new Date(today);
-        checkDate.setDate(checkDate.getDate() + i);
-        const dateStr = checkDate.toISOString().split('T')[0];
-        
-        const response = await fetch('?action=getSlots&date=' + encodeURIComponent(dateStr));
-        const data = await response.json();
-        
-        if (data.success && data.isFullyBooked) {
-          fullyBookedDates.add(dateStr);
-        }
-      }
-      
-      // Store fully booked dates for validation
-      dateInput.dataset.fullyBookedDates = JSON.stringify(Array.from(fullyBookedDates));
-    } catch (err) {
-      console.error('Could not load fully booked dates:', err);
-    }
-  }
-
-  // Call this on page load (with a slight delay to avoid blocking)
-  setTimeout(disableFullyBookedDates, 500);
 
   // booking form submit -> save booking to database
   const form = document.getElementById('bookingForm');

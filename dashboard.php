@@ -173,21 +173,20 @@ if (isset($_GET['action']) && $_GET['action'] === 'getSlots') {
     exit;
   }
   
-  // Get all booked slots for this date (excluding completed bookings for now, as per original index.php behavior)
-  $stmt = $mysqli->prepare("SELECT `Time` FROM `{$dbTable}` WHERE `Date` = ? AND `Complete` = 0");
+  $stmt = $mysqli->prepare("SELECT `Time` FROM `{$dbTable}` WHERE `Date` = ?");
   if (!$stmt) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database error.']);
     exit;
   }
-  
+
   $stmt->bind_param('s', $date);
   $stmt->execute();
   $result = $stmt->get_result();
-  
+
   $bookedSlots = [];
   while ($row = $result->fetch_assoc()) {
-    $bookedSlots[] = $row['Time'];
+    $bookedSlots[] = substr($row['Time'], 0, 5);
   }
   
   $stmt->close();
@@ -1251,6 +1250,7 @@ if (!$mysqli->connect_error) {
                 <option>12:00</option><option>13:00</option><option>14:00</option>
                 <option>15:00</option><option>16:00</option><option>17:00</option>
               </select>
+              <div id="nb-booked-msg" style="display:none; margin-top:6px; font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--clay);">This day is fully booked.</div>
             </div>
           </div>
           <div class="modal-field" style="margin-bottom:24px;">
@@ -1395,6 +1395,7 @@ if (!$mysqli->connect_error) {
             <option>12:00</option><option>13:00</option><option>14:00</option>
             <option>15:00</option><option>16:00</option><option>17:00</option>
           </select>
+          <div id="mnb-booked-msg" style="display:none; margin-top:6px; font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--clay);">This day is fully booked.</div>
         </div>
       </div>
       <div class="modal-field">
@@ -1676,14 +1677,15 @@ function updateServicesData() {
 
 // ===== NEW BOOKING =====
 function openNewBookingModal(time) {
-  const d = new Date(); d.setDate(d.getDate());
   document.getElementById('mnb-date').value = todayStr;
   document.getElementById('mnb-date').min = todayStr;
-  if (time) document.getElementById('mnb-time').value = time;
+  fetchAndUpdateTimeSelect(todayStr, 'mnb-time', 'mnb-booked-msg').then(() => {
+    if (time) document.getElementById('mnb-time').value = time;
+  });
   openModal('newModal');
 }
 
-function saveModalBooking() {
+async function saveModalBooking() {
   const name = document.getElementById('mnb-name').value.trim();
   const phone = document.getElementById('mnb-phone').value.trim();
   const service = document.getElementById('mnb-service').value;
@@ -1694,6 +1696,16 @@ function saveModalBooking() {
   if (!name || !phone || !service || !date) {
     showToast('Please fill in all required fields.'); return;
   }
+
+  try {
+    const res = await fetch('?action=getSlots&date=' + encodeURIComponent(date));
+    const slotData = await res.json();
+    if (slotData.success && slotData.bookedSlots.includes(time)) {
+      showToast('That time slot is already booked. Please choose another.');
+      fetchAndUpdateTimeSelect(date, 'mnb-time', 'mnb-booked-msg');
+      return;
+    }
+  } catch (e) { /* proceed */ }
 
   const form = new FormData();
   form.set('ajax', '1');
@@ -1727,7 +1739,7 @@ function saveModalBooking() {
     }).catch(() => alert('Could not reach server.'));
 }
 
-function saveNewBooking() {
+async function saveNewBooking() {
   const name = document.getElementById('nb-name').value.trim();
   const phone = document.getElementById('nb-phone').value.trim();
   const service = document.getElementById('nb-service').value;
@@ -1735,6 +1747,16 @@ function saveNewBooking() {
   const time = document.getElementById('nb-time').value;
   const notes = document.getElementById('nb-notes').value.trim();
   if (!name || !phone || !service || !date) { showToast('Fill in all required fields.'); return; }
+
+  try {
+    const res = await fetch('?action=getSlots&date=' + encodeURIComponent(date));
+    const slotData = await res.json();
+    if (slotData.success && slotData.bookedSlots.includes(time)) {
+      showToast('That time slot is already booked. Please choose another.');
+      fetchAndUpdateTimeSelect(date, 'nb-time', 'nb-booked-msg');
+      return;
+    }
+  } catch (e) { /* proceed */ }
 
   const form = new FormData();
   form.set('ajax', '1');
@@ -1945,6 +1967,41 @@ async function deleteBooking(id) {
   }
 }
 
+// ===== SLOT AVAILABILITY =====
+async function fetchAndUpdateTimeSelect(dateValue, timeSelectId, msgId) {
+  const select = document.getElementById(timeSelectId);
+  const msg = document.getElementById(msgId);
+  if (!dateValue) {
+    Array.from(select.options).forEach(opt => { opt.disabled = false; });
+    msg.style.display = 'none';
+    return;
+  }
+  try {
+    const res = await fetch('?action=getSlots&date=' + encodeURIComponent(dateValue));
+    const data = await res.json();
+    if (data.success) {
+      Array.from(select.options).forEach(opt => {
+        opt.disabled = data.bookedSlots.includes(opt.value);
+      });
+      if (data.bookedSlots.includes(select.value)) {
+        const first = Array.from(select.options).find(o => !o.disabled);
+        if (first) select.value = first.value;
+      }
+      msg.style.display = data.isFullyBooked ? 'block' : 'none';
+    }
+  } catch (e) {
+    console.error('Could not fetch slots:', e);
+  }
+}
+
+document.getElementById('nb-date').addEventListener('change', function() {
+  fetchAndUpdateTimeSelect(this.value, 'nb-time', 'nb-booked-msg');
+});
+
+document.getElementById('mnb-date').addEventListener('change', function() {
+  fetchAndUpdateTimeSelect(this.value, 'mnb-time', 'mnb-booked-msg');
+});
+
 // ===== INIT =====
 renderBookingsTable();
 updateBookingStats();
@@ -1954,6 +2011,9 @@ renderCal();
 document.getElementById('nb-date').min = todayStr;
 document.getElementById('nb-date').value = todayStr;
 document.getElementById('mnb-date').value = todayStr;
+
+// Check slot availability for today on the Add Booking panel
+fetchAndUpdateTimeSelect(todayStr, 'nb-time', 'nb-booked-msg');
 </script>
 </body>
 </html>
