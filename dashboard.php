@@ -1,3 +1,252 @@
+<?php
+$dbHost = 'localhost';
+$dbUser = 'root';
+$dbPass = '';
+$dbName = 'dbTheStyleBay';
+$dbTable = 'tblbookings';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $action = $_POST['action'] ?? '';
+    $name = trim($_POST['name'] ?? '');
+    $surname = trim($_POST['surname'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $date = trim($_POST['date'] ?? '');
+    $time = trim($_POST['time'] ?? '');
+    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+
+    $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+    if ($mysqli->connect_error) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+        exit;
+    }
+  // Handle add (create) action which doesn't require an ID
+  if ($action === 'add') {
+    // split name into first/last
+    $full = trim($name);
+    $parts = preg_split('/\s+/', $full);
+    $first = $parts[0] ?? '';
+    $last = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
+
+    // map service to price server-side (fallback 0)
+    $prices = [
+      'Cut & Trim' => 160,
+      'Braids & Cornrows' => 300,
+      'Weave / Extensions' => 550,
+      'Colour & Highlights' => 400,
+      'Wash, Treat & Blow-dry' => 180,
+      'Beard Shape-up' => 90,
+    ];
+    if (empty($price) && !empty($_POST['service']) && isset($prices[$_POST['service']])) {
+      $price = $prices[$_POST['service']];
+    }
+
+    $service = $_POST['service'] ?? '';
+    $notes = trim($_POST['notes'] ?? '');
+    $extra = "Service: {$service} | Notes: {$notes}";
+
+    $stmt = $mysqli->prepare("INSERT INTO `{$dbTable}` (`Name`,`Surname`,`ContactNum`,`Date`,`Time`,`Price`,`Complete`,`ExtraInfo`) VALUES (?,?,?,?,?,?,'0',?)");
+    if (!$stmt) {
+      http_response_code(500);
+      echo json_encode(['success' => false, 'message' => 'Prepare failed.']);
+      exit;
+    }
+    $stmt->bind_param('sssssds', $first, $last, $phone, $date, $time, $price, $extra);
+    if ($stmt->execute()) {
+      $newId = $mysqli->insert_id;
+      echo json_encode(['success' => true, 'booking' => [
+        'bookingId' => intval($newId),
+        'name' => trim($first . ' ' . $last),
+        'phone' => $phone,
+        'service' => $service,
+        'date' => $date,
+        'time' => $time,
+        'price' => floatval($price),
+        'complete' => false,
+        'status' => 'booked',
+        'notes' => $notes
+      ]]);
+      exit;
+    }
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Insert failed.']);
+    exit;
+  }
+
+  $bookingId = isset($_POST['id']) ? intval($_POST['id']) : 0;
+  if ($bookingId <= 0) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid booking ID.']);
+    exit;
+  }
+
+  if ($action === 'complete') {
+        $stmt = $mysqli->prepare("UPDATE `{$dbTable}` SET `Complete` = 1 WHERE `BookingID` = ? LIMIT 1");
+        $stmt->bind_param('i', $bookingId);
+    } elseif ($action === 'delete') {
+        $stmt = $mysqli->prepare("DELETE FROM `{$dbTable}` WHERE `BookingID` = ? LIMIT 1");
+        $stmt->bind_param('i', $bookingId);
+    } else {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid action.']);
+        exit;
+    }
+
+    if ($stmt && $stmt->execute()) {
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database update failed.']);
+    exit;
+}
+
+// AJAX: return bookings list for polling
+if (isset($_GET['ajax']) && ($_GET['action'] ?? '') === 'list') {
+  header('Content-Type: application/json; charset=utf-8');
+  $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+  if ($mysqli->connect_error) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+    exit;
+  }
+
+  $out = [];
+  $sql = "SELECT `BookingID`,`Name`,`Surname`,`ContactNum`,`Date`,`Time`,`Price`,`Complete`,`ExtraInfo` FROM `{$dbTable}` ORDER BY `Date`,`Time`";
+  if ($result = $mysqli->query($sql)) {
+    $id = 1;
+    while ($row = $result->fetch_assoc()) {
+      $service = '';
+      $notes = '';
+      $price = isset($row['Price']) ? floatval($row['Price']) : 0;
+      $complete = !empty($row['Complete']) && in_array($row['Complete'], [1, '1', true, 'true', 'yes'], true);
+      if (!empty($row['ExtraInfo'])) {
+        if (preg_match('/Service:\s*([^|]+)/i', $row['ExtraInfo'], $match)) {
+          $service = trim($match[1]);
+        }
+        if (preg_match('/Notes:\s*(.*)$/i', $row['ExtraInfo'], $match)) {
+          $notes = trim($match[1]);
+        }
+        if (!$service) {
+          $service = trim(preg_replace('/\|.*$/', '', $row['ExtraInfo']));
+        }
+      }
+      $out[] = [
+        'id' => $id++,
+        'bookingId' => intval($row['BookingID']),
+        'name' => trim($row['Name'] . ' ' . $row['Surname']),
+        'phone' => $row['ContactNum'],
+        'service' => $service,
+        'date' => $row['Date'],
+        'time' => $row['Time'],
+        'price' => $price,
+        'complete' => $complete,
+        'status' => $complete ? 'complete' : 'booked',
+        'notes' => $notes,
+      ];
+    }
+    $result->free();
+  }
+
+  echo json_encode(['success' => true, 'bookings' => $out]);
+  exit;
+}
+
+// AJAX: Get available slots for a given date
+if (isset($_GET['action']) && $_GET['action'] === 'getSlots') {
+  header('Content-Type: application/json; charset=utf-8');
+  
+  $date = trim($_GET['date'] ?? '');
+  
+  if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid date format.']);
+    exit;
+  }
+  
+  $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+  if ($mysqli->connect_error) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+    exit;
+  }
+  
+  // Get all booked slots for this date (excluding completed bookings for now, as per original index.php behavior)
+  $stmt = $mysqli->prepare("SELECT `Time` FROM `{$dbTable}` WHERE `Date` = ? AND `Complete` = 0");
+  if (!$stmt) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database error.']);
+    exit;
+  }
+  
+  $stmt->bind_param('s', $date);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  
+  $bookedSlots = [];
+  while ($row = $result->fetch_assoc()) {
+    $bookedSlots[] = $row['Time'];
+  }
+  
+  $stmt->close();
+  $mysqli->close();
+  
+  // All available time slots
+  $allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+  $isFullyBooked = count($bookedSlots) === count($allSlots);
+  
+  echo json_encode([
+    'success' => true,
+    'date' => $date,
+    'bookedSlots' => $bookedSlots,
+    'isFullyBooked' => $isFullyBooked,
+    'availableSlots' => array_values(array_diff($allSlots, $bookedSlots))
+  ]);
+  exit;
+}
+
+$bookings = [];
+$mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+if (!$mysqli->connect_error) {
+    $sql = "SELECT `BookingID`,`Name`,`Surname`,`ContactNum`,`Date`,`Time`,`Price`,`Complete`,`ExtraInfo` FROM `{$dbTable}` ORDER BY `Date`,`Time`";
+    if ($result = $mysqli->query($sql)) {
+        $id = 1;
+        while ($row = $result->fetch_assoc()) {
+            $service = '';
+            $notes = '';
+            $price = isset($row['Price']) ? floatval($row['Price']) : 0;
+            $complete = !empty($row['Complete']) && in_array($row['Complete'], [1, '1', true, 'true', 'yes'], true);
+            if (!empty($row['ExtraInfo'])) {
+                if (preg_match('/Service:\s*([^|]+)/i', $row['ExtraInfo'], $match)) {
+                    $service = trim($match[1]);
+                }
+                if (preg_match('/Notes:\s*(.*)$/i', $row['ExtraInfo'], $match)) {
+                    $notes = trim($match[1]);
+                }
+                if (!$service) {
+                    $service = trim(preg_replace('/\|.*$/', '', $row['ExtraInfo']));
+                }
+            }
+            $bookings[] = [
+                'id' => $id++,
+                'bookingId' => intval($row['BookingID']),
+                'name' => trim($row['Name'] . ' ' . $row['Surname']),
+                'phone' => $row['ContactNum'],
+                'service' => $service,
+                'date' => $row['Date'],
+                'time' => $row['Time'],
+                'price' => $price,
+                'complete' => $complete,
+                'status' => $complete ? 'complete' : 'booked',
+                'notes' => $notes,
+            ];
+        }
+        $result->free();
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,7 +314,7 @@
     gap: 10px;
   }
 
-  .sidebar-brand svg { width: 26px; height: 26px; flex-shrink: 0; }
+  .sidebar-brand svg { width: 0px; height: 0px; flex-shrink: 0; }
 
   .brand-text { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--cream); line-height: 1.2; }
   .brand-sub { font-family: 'Space Mono', monospace; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(250,246,236,0.4); display: block; margin-top: 2px; }
@@ -233,6 +482,16 @@
     padding: 20px 22px;
   }
 
+  /* Centered, stretched stat tile (used on Services panel) */
+  .stat-tile--center {
+    grid-column: 1 / -1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
   .stat-label {
     font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
@@ -380,8 +639,10 @@
   .status-new::before { background: #d4a017; }
   .status-confirmed { background: var(--green-bg); color: #2a5e41; }
   .status-confirmed::before { background: var(--green); }
-  .status-done { background: #f0f0f0; color: #666; }
-  .status-done::before { background: #aaa; }
+  .status-booked { background: var(--green-bg); color: #2a5e41; }
+  .status-booked::before { background: var(--green); }
+  .status-complete { background: #f0f0f0; color: #666; }
+  .status-complete::before { background: #aaa; }
   .status-noshow { background: var(--red-bg); color: #7a2010; }
   .status-noshow::before { background: var(--clay); }
 
@@ -433,7 +694,7 @@
   /* slot colours */
   .qs-bar.new { background: #d4a017; }
   .qs-bar.confirmed { background: var(--green); }
-  .qs-bar.done { background: #ccc; }
+  .qs-bar.complete { background: #ccc; }
 
   /* ===== MINI CALENDAR ===== */
   .mini-cal {
@@ -837,12 +1098,7 @@
 
   <nav class="sidebar-nav">
     <div class="nav-section-label">Manage</div>
-    <div class="nav-item active" data-panel="today">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 7h14" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v4M11 1v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Today's Chair
-      <span class="nav-badge" id="todayBadge">5</span>
-    </div>
-    <div class="nav-item" data-panel="bookings">
+    <div class="nav-item active" data-panel="bookings">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6h8M4 9h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       All Bookings
       <span class="nav-badge" id="newBadge">2</span>
@@ -875,8 +1131,8 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <h1 id="topbarTitle">Today's Chair</h1>
-      <div class="topbar-sub" id="topbarSub">Tuesday · Old Oak Centre, Belair</div>
+      <h1 id="topbarTitle">All Bookings</h1>
+      <div class="topbar-sub" id="topbarSub">Old Oak Centre, Belair</div>
     </div>
     <div class="topbar-right">
       <div class="topbar-date" id="topbarDate"></div>
@@ -887,114 +1143,34 @@
   <!-- CONTENT -->
   <div class="content">
 
-    <!-- ======== PANEL: TODAY ======== -->
-    <div class="panel active" id="panel-today">
-      <div class="stat-strip">
-        <div class="stat-tile">
-          <div class="stat-label">Today's bookings</div>
-          <div class="stat-value">5</div>
-          <div class="stat-meta">3 confirmed · 2 pending</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-label">Chairs filled</div>
-          <div class="stat-value">5 <span style="font-size:1rem;font-family:'Work Sans';font-weight:400;color:var(--muted)">/ 9</span></div>
-          <div class="stat-meta">4 slots open</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-label">Est. revenue today</div>
-          <div class="stat-value"><span class="currency">R</span>1 520</div>
-          <div class="stat-meta stat-up">↑ R340 vs last Tue</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-label">Pending replies</div>
-          <div class="stat-value" style="color:var(--clay)">2</div>
-          <div class="stat-meta">Need confirmation</div>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <!-- Schedule -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Today's schedule</div>
-              <div class="card-sub">09:00 – 18:00</div>
-            </div>
-            <button class="btn btn-outline" onclick="openNewBookingModal()">+ Add slot</button>
-          </div>
-
-          <div id="todaySlots"></div>
-        </div>
-
-        <!-- Right column -->
-        <div style="display:flex; flex-direction:column; gap:18px;">
-          <!-- Mini calendar -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Week view</div>
-            </div>
-            <div class="mini-cal">
-              <div class="cal-header">
-                <div class="cal-month" id="calMonthLabel"></div>
-                <div class="cal-nav">
-                  <button onclick="shiftCal(-1)">‹</button>
-                  <button onclick="shiftCal(1)">›</button>
-                </div>
-              </div>
-              <div class="cal-grid" id="calGrid"></div>
-            </div>
-          </div>
-
-          <!-- Quick notes -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Salon notes</div>
-            </div>
-            <div class="notes-item">
-              <div class="notes-label">Today</div>
-              Thandi brings her own extensions for the 14:00 install. No extra charge for product.
-            </div>
-            <div class="notes-item">
-              <div class="notes-label">This week</div>
-              Stock up on relaxer — running low. Friday looks busy, consider pre-booking lunch hour.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ======== PANEL: ALL BOOKINGS ======== -->
     <div class="panel" id="panel-bookings">
       <div class="stat-strip">
         <div class="stat-tile">
           <div class="stat-label">Total this month</div>
-          <div class="stat-value">42</div>
-          <div class="stat-meta stat-up">↑ 8 vs last month</div>
+          <div class="stat-value" id="allBookingsTotal">0</div>
+          <div class="stat-meta" id="allBookingsMeta">No bookings yet</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-label">Confirmed</div>
-          <div class="stat-value">35</div>
-          <div class="stat-meta">83 % rate</div>
+          <div class="stat-label">Total bookings</div>
+          <div class="stat-value" id="allBookingsConfirmed">0</div>
+          <div class="stat-meta" id="allBookingsConfirmedMeta">No data</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-label">No-shows</div>
-          <div class="stat-value stat-down" style="color:var(--clay)">3</div>
-          <div class="stat-meta stat-down">↑ 1 vs last month</div>
+          <div class="stat-label">Booked days</div>
+          <div class="stat-value stat-down" style="color:var(--clay)" id="allBookingsNoShows">0</div>
+          <div class="stat-meta stat-down" id="allBookingsNoShowsMeta">No data</div>
         </div>
         <div class="stat-tile">
           <div class="stat-label">Month revenue</div>
-          <div class="stat-value"><span class="currency">R</span>12 340</div>
-          <div class="stat-meta stat-up">↑ R1 680 vs last month</div>
+          <div class="stat-value"><span class="currency">R</span><span id="allBookingsRevenue">0</span></div>
+          <div class="stat-meta stat-up" id="allBookingsRevenueMeta">No revenue</div>
         </div>
       </div>
 
       <div class="card">
         <div class="tab-bar">
-          <button class="tab-btn active" data-tab="all">All</button>
-          <button class="tab-btn" data-tab="new">New requests</button>
-          <button class="tab-btn" data-tab="confirmed">Confirmed</button>
-          <button class="tab-btn" data-tab="done">Completed</button>
-          <button class="tab-btn" data-tab="noshow">No-shows</button>
+          <button class="tab-btn active" data-tab="all">All Bookings</button>
         </div>
         <div class="filter-bar">
           <span class="filter-label">Filter:</span>
@@ -1016,6 +1192,7 @@
               <tr>
                 <th>Client</th>
                 <th>Service</th>
+                <th>Price</th>
                 <th>Date &amp; Time</th>
                 <th>Status</th>
                 <th>Notes</th>
@@ -1061,13 +1238,6 @@
                 <option>Beard Shape-up</option>
               </select>
             </div>
-            <div class="modal-field">
-              <label>Status</label>
-              <select id="nb-status">
-                <option value="new">New request</option>
-                <option value="confirmed">Confirmed</option>
-              </select>
-            </div>
           </div>
           <div class="modal-row">
             <div class="modal-field">
@@ -1089,7 +1259,7 @@
           </div>
           <div style="display:flex; gap:10px;">
             <button class="btn btn-clay" onclick="saveNewBooking()">Save booking</button>
-            <button class="btn btn-outline" onclick="switchPanel('today')">Cancel</button>
+            <button class="btn btn-outline" onclick="switchPanel('bookings')">Cancel</button>
           </div>
         </div>
       </div>
@@ -1098,25 +1268,10 @@
     <!-- ======== PANEL: SERVICES ======== -->
     <div class="panel" id="panel-services">
       <div class="stat-strip">
-        <div class="stat-tile">
+        <div class="stat-tile stat-tile--center">
           <div class="stat-label">Best seller</div>
-          <div class="stat-value" style="font-size:1.2rem; font-family:'Fraunces',serif; font-weight:600; padding-top:4px;">Weaves &amp; Extensions</div>
-          <div class="stat-meta">14 bookings this month</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-label">Avg booking value</div>
-          <div class="stat-value"><span class="currency">R</span>294</div>
-          <div class="stat-meta stat-up">↑ R22 vs last month</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-label">Busiest day</div>
-          <div class="stat-value" style="font-size:1.3rem; font-family:'Fraunces',serif; font-weight:600; padding-top:6px;">Saturday</div>
-          <div class="stat-meta">avg 9 bookings</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-label">Busiest slot</div>
-          <div class="stat-value" style="font-size:1.3rem; font-family:'Fraunces',serif; font-weight:600; padding-top:6px;">10:00</div>
-          <div class="stat-meta">most requested time</div>
+          <div class="stat-value" style="font-size:1.2rem; font-family:'Fraunces',serif; font-weight:600; padding-top:4px;" id="servicesBestSeller">—</div>
+          <div class="stat-meta" id="servicesBestSellerMeta">No data yet</div>
         </div>
       </div>
 
@@ -1227,13 +1382,6 @@
             <option>Beard Shape-up</option>
           </select>
         </div>
-        <div class="modal-field">
-          <label>Status</label>
-          <select id="mnb-status">
-            <option value="new">New request</option>
-            <option value="confirmed">Confirmed</option>
-          </select>
-        </div>
       </div>
       <div class="modal-row">
         <div class="modal-field">
@@ -1269,12 +1417,12 @@
 <script>
 // ===== DATA =====
 const SERVICES = [
-  { name: 'Weave / Extensions', count: 14, revenue: 7200 },
-  { name: 'Braids & Cornrows', count: 10, revenue: 3100 },
-  { name: 'Cut & Trim', count: 9, revenue: 1260 },
-  { name: 'Colour & Highlights', count: 5, revenue: 2100 },
-  { name: 'Wash, Treat & Blow-dry', count: 3, revenue: 540 },
-  { name: 'Beard Shape-up', count: 1, revenue: 90 },
+  { name: 'Weave / Extensions', count: 0, revenue: 0 },
+  { name: 'Braids & Cornrows', count: 0, revenue: 0 },
+  { name: 'Cut & Trim', count: 0, revenue: 0 },
+  { name: 'Colour & Highlights', count: 0, revenue: 0 },
+  { name: 'Wash, Treat & Blow-dry', count: 0, revenue: 0 },
+  { name: 'Beard Shape-up', count: 0, revenue: 0 },
 ];
 
 const today = new Date();
@@ -1282,20 +1430,9 @@ const todayStr = today.toISOString().split('T')[0];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-let bookings = [
-  { id:1, name:'Thandi Joubert', phone:'082 111 2233', service:'Weave / Extensions', date:todayStr, time:'09:00', status:'confirmed', notes:'Brings own hair. Sew-in, full head.' },
-  { id:2, name:'Sipho Dlamini', phone:'073 445 6677', service:'Cut & Trim', date:todayStr, time:'10:00', status:'confirmed', notes:'' },
-  { id:3, name:'Nomsa Petersen', phone:'083 998 1122', service:'Braids & Cornrows', date:todayStr, time:'11:00', status:'new', notes:'Box braids, waist-length. First visit.' },
-  { id:4, name:'Kezia Williams', phone:'061 233 4455', service:'Colour & Highlights', date:todayStr, time:'14:00', status:'confirmed', notes:'Patch test done last week. Honey highlights.' },
-  { id:5, name:'Luca van der Berg', phone:'084 776 8899', service:'Beard Shape-up', date:todayStr, time:'16:00', status:'new', notes:'' },
-  { id:6, name:'Aisha Mokoena', phone:'072 334 5566', service:'Wash, Treat & Blow-dry', date:offsetDate(-2), time:'10:00', status:'done', notes:'' },
-  { id:7, name:'Priya Naidoo', phone:'083 112 3344', service:'Weave / Extensions', date:offsetDate(-2), time:'13:00', status:'done', notes:'Closure install.' },
-  { id:8, name:'James Fortune', phone:'076 889 0011', service:'Cut & Trim', date:offsetDate(-3), time:'09:00', status:'noshow', notes:'' },
-  { id:9, name:'Fatima Adams', phone:'082 667 8899', service:'Braids & Cornrows', date:offsetDate(1), time:'11:00', status:'confirmed', notes:'Cornrows, natural hair.' },
-  { id:10, name:'Kagiso Molete', phone:'073 221 3344', service:'Colour & Highlights', date:offsetDate(1), time:'14:00', status:'new', notes:'' },
-];
+const bookings = <?php echo json_encode($bookings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
-let nextId = 11;
+let nextId = <?php echo count($bookings) + 1; ?>;
 
 function offsetDate(days) {
   const d = new Date(today);
@@ -1319,9 +1456,8 @@ function prettyDate(d) {
 }
 
 // ===== NAV =====
-const panels = ['today','bookings','new','services','settings'];
+const panels = ['bookings','new','services','settings'];
 const panelTitles = {
-  today: "Today's Chair",
   bookings: "All Bookings",
   new: "Add Booking",
   services: "Services & Revenue",
@@ -1337,8 +1473,7 @@ function switchPanel(name) {
   });
   document.getElementById('topbarTitle').textContent = panelTitles[name];
   if (name === 'bookings') renderBookingsTable();
-  if (name === 'services') renderServices();
-  if (name === 'today') renderTodaySlots();
+  if (name === 'services') { updateServicesData(); renderServices(); }
 }
 
 document.querySelectorAll('.nav-item[data-panel]').forEach(el => {
@@ -1351,47 +1486,9 @@ document.getElementById('topbarDate').textContent =
 document.getElementById('topbarSub').textContent =
   DAYS[today.getDay()] + ' · Old Oak Centre, Belair';
 
-// ===== TODAY SLOTS =====
-function renderTodaySlots() {
-  const container = document.getElementById('todaySlots');
-  const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
-  const todayBookings = bookings.filter(b => b.date === todayStr);
-
-  container.innerHTML = '';
-  slots.forEach(time => {
-    const b = todayBookings.find(b => b.time === time);
-    const el = document.createElement('div');
-    el.className = 'quick-slot';
-    if (b) {
-      el.innerHTML = `
-        <div class="qs-time">${time}</div>
-        <div class="qs-bar ${b.status}"></div>
-        <div class="qs-info">
-          <div class="qs-name">${b.name}</div>
-          <div class="qs-service">${b.service}</div>
-        </div>
-        <div class="qs-status">
-          <span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>
-        </div>`;
-      el.addEventListener('click', () => openDetailModal(b.id));
-    } else {
-      el.innerHTML = `
-        <div class="qs-time">${time}</div>
-        <div class="qs-bar" style="background:var(--line-light);"></div>
-        <div class="qs-info" style="color:var(--muted); font-size:0.82rem;">Open slot</div>
-        <button class="btn btn-ghost-sm" onclick="event.stopPropagation(); openNewBookingModalAt('${time}')">+ Book</button>`;
-    }
-    container.appendChild(el);
-  });
-
-  // badges
-  const todayNew = todayBookings.filter(b => b.status === 'new').length;
-  document.getElementById('newBadge').textContent = bookings.filter(b => b.status === 'new').length;
-  document.getElementById('todayBadge').textContent = todayBookings.length;
-}
-
 function statusLabel(s) {
-  return { new: 'New', confirmed: 'Confirmed', done: 'Done', noshow: 'No-show' }[s] || s;
+  if (s === 'complete') return 'Complete';
+  return 'Booked';
 }
 
 // ===== BOOKINGS TABLE =====
@@ -1421,35 +1518,69 @@ function renderBookingsTable() {
   const tbody = document.getElementById('bookingsTableBody');
 
   let filtered = [...bookings];
-  if (currentTab !== 'all') filtered = filtered.filter(b => b.status === currentTab);
   if (filterDate) filtered = filtered.filter(b => b.date === filterDate);
   if (filterService) filtered = filtered.filter(b => b.service === filterService);
 
   filtered.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No bookings match this filter.</div></td></tr>';
-    return;
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No bookings match this filter.</div></td></tr>';
+  } else {
+    tbody.innerHTML = filtered.map(b => `
+      <tr>
+        <td>
+          <div class="client-name">${b.name}</div>
+          <div class="client-phone">${b.phone}</div>
+        </td>
+        <td><span class="service-tag">${b.service}</span></td>
+        <td>R ${Number(b.price || PRICES[b.service] || 0).toLocaleString('en-ZA')}</td>
+        <td><div class="time-badge">${prettyDate(b.date)}<br><span style="color:var(--gold);">${b.time}</span></div></td>
+        <td><span class="status-badge status-${b.status}">${statusLabel(b.status)}</span></td>
+        <td style="font-size:0.82rem; color:var(--muted); max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${b.notes || '—'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-ghost-sm" onclick="openDetailModal(${b.id})">View</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
   }
 
-  tbody.innerHTML = filtered.map(b => `
-    <tr>
-      <td>
-        <div class="client-name">${b.name}</div>
-        <div class="client-phone">${b.phone}</div>
-      </td>
-      <td><span class="service-tag">${b.service}</span></td>
-      <td><div class="time-badge">${prettyDate(b.date)}<br><span style="color:var(--gold);">${b.time}</span></div></td>
-      <td><span class="status-badge status-${b.status}">${statusLabel(b.status)}</span></td>
-      <td style="font-size:0.82rem; color:var(--muted); max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${b.notes || '—'}</td>
-      <td>
-        <div class="row-actions">
-          <button class="btn btn-ghost-sm" onclick="openDetailModal(${b.id})">View</button>
-          ${b.status === 'new' ? `<button class="btn btn-outline" style="font-size:0.75rem;padding:5px 9px;color:var(--green);border-color:var(--green)" onclick="updateStatus(${b.id},'confirmed')">✓ Confirm</button>` : ''}
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  updateBookingStats();
+}
+
+function updateBookingStats() {
+  const monthKey = todayStr.slice(0, 7);
+  const monthBookings = bookings.filter(b => b.date.startsWith(monthKey));
+  const totalBookings = bookings.length;
+  const monthRevenue = monthBookings.reduce((sum, b) => {
+    const priceVal = Number(b.price || PRICES[b.service] || 0);
+    return sum + (b.complete ? priceVal : 0);
+  }, 0);
+  const bookedDays = new Set(monthBookings.map(b => b.date)).size;
+
+  document.getElementById('allBookingsTotal').textContent = monthBookings.length;
+  document.getElementById('allBookingsMeta').textContent = monthBookings.length
+    ? `${monthBookings.length} bookings this month`
+    : 'No bookings this month';
+
+  document.getElementById('allBookingsConfirmed').textContent = totalBookings;
+  document.getElementById('allBookingsConfirmedMeta').textContent = totalBookings
+    ? 'Total bookings in system'
+    : 'No saved bookings';
+
+  document.getElementById('allBookingsNoShows').textContent = bookedDays;
+  document.getElementById('allBookingsNoShowsMeta').textContent = bookedDays
+    ? `${bookedDays} booked day${bookedDays === 1 ? '' : 's'} this month`
+    : 'No booked days';
+
+  document.getElementById('allBookingsRevenue').textContent = monthRevenue.toLocaleString('en-ZA');
+  document.getElementById('allBookingsRevenueMeta').textContent = monthRevenue
+    ? 'Current month revenue'
+    : 'No revenue yet';
+  document.getElementById('newBadge').textContent = totalBookings;
+  // keep services data in sync
+  if (typeof updateServicesData === 'function') updateServicesData();
 }
 
 // ===== DETAIL MODAL =====
@@ -1464,10 +1595,10 @@ function openDetailModal(id) {
   grid.innerHTML = [
     ['Phone', b.phone],
     ['Service', b.service],
+    ['Price', `R ${Number(b.price || PRICES[b.service] || 0).toLocaleString('en-ZA')}`],
     ['Date', prettyDate(b.date)],
     ['Time', b.time],
     ['Status', `<span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>`],
-    ['Est. price', `R ${PRICES[b.service] || '—'}`],
   ].map(([label, val]) => `
     <div class="detail-item">
       <div class="detail-label">${label}</div>
@@ -1489,20 +1620,17 @@ function openDetailModal(id) {
     actions.appendChild(btn);
   };
 
-  if (b.status === 'new') {
-    addBtn('✓ Confirm', 'btn-clay', () => { updateStatus(id, 'confirmed'); closeModal('detailModal'); });
+  if (!b.complete) {
+    addBtn('Mark complete', 'btn btn-gold', () => markCompleteBooking(b.id));
   }
-  if (b.status === 'confirmed') {
-    addBtn('Mark done', 'btn-outline', () => { updateStatus(id, 'done'); closeModal('detailModal'); });
-    addBtn('No-show', 'btn-ghost-sm', () => { updateStatus(id, 'noshow'); closeModal('detailModal'); });
-  }
+  addBtn('Delete booking', 'btn btn-outline', () => deleteBooking(b.id));
 
   const waBtn = document.createElement('a');
   waBtn.className = 'btn btn-outline';
   waBtn.style.color = '#128C7E';
   waBtn.style.borderColor = '#128C7E';
   waBtn.textContent = 'WhatsApp';
-  waBtn.href = `https://wa.me/${b.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`Hi ${b.name.split(' ')[0]}, just confirming your booking at The Style Bay: ${b.service} on ${prettyDate(b.date)} at ${b.time}. See you then! 👑`)}`;
+  waBtn.href = `https://wa.me/${b.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`Hi ${b.name.split(' ')[0]}, your booking at The Style Bay is set for ${b.service} on ${prettyDate(b.date)} at ${b.time}. See you then! 👑`)}`;
   waBtn.target = '_blank';
   waBtn.rel = 'noopener';
   actions.appendChild(waBtn);
@@ -1510,29 +1638,40 @@ function openDetailModal(id) {
   openModal('detailModal');
 }
 
-function updateStatus(id, status) {
-  const b = bookings.find(x => x.id === id);
-  if (b) {
-    b.status = status;
-    renderTodaySlots();
-    if (document.getElementById('panel-bookings').classList.contains('active')) renderBookingsTable();
-    showToast(`${b.name} marked as ${statusLabel(status).toLowerCase()}.`);
-    document.getElementById('newBadge').textContent = bookings.filter(b => b.status === 'new').length;
-  }
-}
-
 // ===== SERVICES =====
 function renderServices() {
   const max = Math.max(...SERVICES.map(s => s.count));
   const container = document.getElementById('serviceBreakdown');
-  container.innerHTML = SERVICES.map(s => `
+  container.innerHTML = SERVICES.map(s => {
+    const width = max ? (s.count / max * 100) : 0;
+    return `
     <div class="svc-row">
       <div class="svc-name">${s.name}</div>
-      <div class="svc-bar-wrap"><div class="svc-bar" style="width:${(s.count/max*100)}%"></div></div>
+      <div class="svc-bar-wrap"><div class="svc-bar" style="width:${width}%"></div></div>
       <div class="svc-count">${s.count}</div>
       <div class="svc-revenue">R ${s.revenue.toLocaleString()}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+// Build SERVICES counts and revenue from current bookings
+function updateServicesData() {
+  // reset
+  SERVICES.forEach(s => { s.count = 0; s.revenue = 0; });
+
+  bookings.forEach(b => {
+    const idx = SERVICES.findIndex(s => s.name === b.service);
+    const priceVal = Number(b.price || PRICES[b.service] || 0);
+    if (idx === -1) return;
+    SERVICES[idx].count += 1;
+    // Only include revenue for completed bookings
+    if (b.complete) SERVICES[idx].revenue += priceVal;
+  });
+
+  // update best seller label
+  const best = SERVICES.reduce((a, b) => (b.count > (a.count||0) ? b : a), { count: 0 });
+  document.getElementById('servicesBestSeller').textContent = best && best.count ? best.name : '—';
+  document.getElementById('servicesBestSellerMeta').textContent = best && best.count ? `${best.count} bookings` : 'No data yet';
 }
 
 // ===== NEW BOOKING =====
@@ -1544,13 +1683,10 @@ function openNewBookingModal(time) {
   openModal('newModal');
 }
 
-function openNewBookingModalAt(time) { openNewBookingModal(time); }
-
 function saveModalBooking() {
   const name = document.getElementById('mnb-name').value.trim();
   const phone = document.getElementById('mnb-phone').value.trim();
   const service = document.getElementById('mnb-service').value;
-  const status = document.getElementById('mnb-status').value;
   const date = document.getElementById('mnb-date').value;
   const time = document.getElementById('mnb-time').value;
   const notes = document.getElementById('mnb-notes').value.trim();
@@ -1559,28 +1695,72 @@ function saveModalBooking() {
     showToast('Please fill in all required fields.'); return;
   }
 
-  bookings.push({ id: nextId++, name, phone, service, status, date, time, notes });
-  closeModal('newModal');
-  renderTodaySlots();
-  showToast(`Booking added for ${name}.`);
-  document.getElementById('mnb-name').value = '';
-  document.getElementById('mnb-phone').value = '';
-  document.getElementById('mnb-service').value = '';
-  document.getElementById('mnb-notes').value = '';
+  const form = new FormData();
+  form.set('ajax', '1');
+  form.set('action', 'add');
+  form.set('name', name);
+  form.set('phone', phone);
+  form.set('service', service);
+  form.set('date', date);
+  form.set('time', time);
+  form.set('notes', notes);
+
+  fetch(window.location.href, { method: 'POST', body: form })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.success && data.booking) {
+        const b = data.booking;
+        b.id = nextId++;
+        bookings.push(b);
+        closeModal('newModal');
+        renderBookingsTable();
+        updateBookingStats();
+        showToast(`Booking added for ${name}.`);
+        document.getElementById('mnb-name').value = '';
+        document.getElementById('mnb-phone').value = '';
+        document.getElementById('mnb-service').value = '';
+        document.getElementById('mnb-notes').value = '';
+        if (typeof pollBookings === 'function') pollBookings();
+      } else {
+        alert(data.message || 'Could not save booking.');
+      }
+    }).catch(() => alert('Could not reach server.'));
 }
 
 function saveNewBooking() {
   const name = document.getElementById('nb-name').value.trim();
   const phone = document.getElementById('nb-phone').value.trim();
   const service = document.getElementById('nb-service').value;
-  const status = document.getElementById('nb-status').value;
   const date = document.getElementById('nb-date').value;
   const time = document.getElementById('nb-time').value;
   const notes = document.getElementById('nb-notes').value.trim();
   if (!name || !phone || !service || !date) { showToast('Fill in all required fields.'); return; }
-  bookings.push({ id: nextId++, name, phone, service, status, date, time, notes });
-  showToast(`Booking for ${name} saved.`);
-  switchPanel('today');
+
+  const form = new FormData();
+  form.set('ajax', '1');
+  form.set('action', 'add');
+  form.set('name', name);
+  form.set('phone', phone);
+  form.set('service', service);
+  form.set('date', date);
+  form.set('time', time);
+  form.set('notes', notes);
+
+  fetch(window.location.href, { method: 'POST', body: form })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.success && data.booking) {
+        const b = data.booking;
+        b.id = nextId++;
+        bookings.push(b);
+        showToast(`Booking for ${name} saved.`);
+        switchPanel('bookings');
+        renderBookingsTable();
+        if (typeof pollBookings === 'function') pollBookings();
+      } else {
+        alert(data.message || 'Could not save booking.');
+      }
+    }).catch(() => alert('Could not reach server.'));
 }
 
 // ===== CALENDAR =====
@@ -1653,8 +1833,121 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+function splitName(fullName) {
+  const parts = fullName.trim().split(/\s+/);
+  return [parts[0] || '', parts.slice(1).join(' ')];
+}
+
+async function postDashboardAction(action, booking) {
+  if (!booking.bookingId) {
+    throw new Error('Missing booking ID');
+  }
+
+  const form = new FormData();
+  form.set('ajax', '1');
+  form.set('action', action);
+  form.set('id', booking.bookingId);
+
+  const response = await fetch(window.location.href, {
+    method: 'POST',
+    body: form,
+  });
+  return response.json();
+}
+
+// Poll server for latest bookings and update UI if changed
+let _polling = false;
+async function pollBookings() {
+  if (_polling) return;
+  _polling = true;
+  try {
+    const res = await fetch(window.location.pathname + '?ajax=1&action=list');
+    const data = await res.json();
+    if (data && data.success && Array.isArray(data.bookings)) {
+      // compare by bookingId list
+      const remoteIds = data.bookings.map(b => b.bookingId).join(',');
+      const localIds = bookings.map(b => b.bookingId).join(',');
+      if (remoteIds !== localIds) {
+        // Replace local bookings with fresh data
+        bookings.length = 0;
+        data.bookings.forEach(b => bookings.push(b));
+        renderBookingsTable();
+        updateBookingStats();
+      }
+    }
+  } catch (e) {
+    // silently ignore network errors
+    console.error('Polling error', e);
+  } finally {
+    _polling = false;
+  }
+}
+
+// Start polling when on All Bookings panel
+setInterval(() => {
+  const active = document.getElementById('panel-bookings').classList.contains('active');
+  if (active) pollBookings();
+}, 3000);
+
+async function markCompleteBooking(id) {
+  const booking = bookings.find(x => x.id === id);
+  if (!booking || booking.complete) return;
+  if (!confirm('Mark this booking as complete?')) return;
+
+  const result = await postDashboardAction('complete', booking);
+  if (result.success) {
+    // mark booking complete locally so it updates in the table
+    booking.complete = true;
+    booking.status = 'complete';
+    renderBookingsTable();
+    updateBookingStats();
+    // trigger immediate poll so other open pages refresh
+    if (typeof pollBookings === 'function') pollBookings();
+    showToast('Booking marked as complete.');
+    closeModal('detailModal');
+  } else {
+    alert(result.message || 'Could not update booking.');
+  }
+}
+
+async function deleteBooking(id) {
+  const booking = bookings.find(x => x.id === id);
+  if (!booking) return;
+  if (!confirm('Delete this booking? This cannot be undone.')) return;
+  // remove locally immediately so it disappears from the table
+  const idx = bookings.indexOf(booking);
+  let removed = null;
+  if (idx !== -1) {
+    removed = bookings.splice(idx, 1)[0];
+    renderBookingsTable();
+    updateBookingStats();
+    showToast('Booking deleted.');
+    closeModal('detailModal');
+  }
+
+  // If booking exists on server, request deletion; otherwise we're done
+  if (!booking.bookingId) return;
+
+  try {
+    const result = await postDashboardAction('delete', booking);
+    if (result && result.success) {
+      // notify other tabs
+      if (typeof pollBookings === 'function') pollBookings();
+      return;
+    }
+    // server failed - refresh from server to restore state
+    alert(result.message || 'Could not delete booking on server.');
+    if (typeof pollBookings === 'function') pollBookings();
+  } catch (e) {
+    // network error - refresh to keep UI in sync
+    console.error('Delete error', e);
+    if (typeof pollBookings === 'function') pollBookings();
+  }
+}
+
 // ===== INIT =====
-renderTodaySlots();
+renderBookingsTable();
+updateBookingStats();
 renderCal();
 
 // Set today as min for new booking date fields

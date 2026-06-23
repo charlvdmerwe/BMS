@@ -1,3 +1,124 @@
+<?php
+$dbHost = 'localhost';
+$dbUser = 'root';
+$dbPass = '';
+$dbName = 'dbTheStyleBay';
+$dbTable = 'tblbookings';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $name = trim($_POST['name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $service = trim($_POST['service'] ?? '');
+    $date = trim($_POST['date'] ?? '');
+    $time = trim($_POST['time'] ?? '');
+    $notes = trim($_POST['notes'] ?? '');
+
+    $prices = [
+        'Cut & Trim' => 160,
+        'Braids & Cornrows' => 300,
+        'Weave / Extensions' => 550,
+        'Colour & Highlights' => 400,
+        'Wash, Treat & Blow-dry' => 180,
+        'Beard Shape-up' => 90,
+        'Not sure — advise me' => 0,
+    ];
+    $price = $prices[$service] ?? 0;
+
+    if (!$name || !$phone || !$service || !$date || !$time) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Please fill in all required fields including preferred time.']);
+        exit;
+    }
+
+    $nameParts = preg_split('/\s+/', $name, 2);
+    $firstName = $nameParts[0];
+    $lastName = $nameParts[1] ?? '';
+    $extraInfo = "Service: {$service}";
+    if ($notes !== '') {
+        $extraInfo .= " | Notes: {$notes}";
+    }
+
+    $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+    if ($mysqli->connect_error) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("INSERT INTO `{$dbTable}` (`Name`, `Surname`, `ContactNum`, `Date`, `Time`, `Price`, `Complete`, `ExtraInfo`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error.']);
+        exit;
+    }
+
+    $complete = 0;
+    $stmt->bind_param('sssssiis', $firstName, $lastName, $phone, $date, $time, $price, $complete, $extraInfo);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Could not save booking.']);
+    exit;
+}
+
+// AJAX: Get available slots for a given date
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'getSlots') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $date = trim($_GET['date'] ?? '');
+    
+    if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid date format.']);
+        exit;
+    }
+    
+    $mysqli = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+    if ($mysqli->connect_error) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+        exit;
+    }
+    
+    // Get all booked slots for this date
+    $stmt = $mysqli->prepare("SELECT `Time` FROM `{$dbTable}` WHERE `Date` = ? AND `Complete` = 0");
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error.']);
+        exit;
+    }
+    
+    $stmt->bind_param('s', $date);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $bookedSlots = [];
+    while ($row = $result->fetch_assoc()) {
+        $bookedSlots[] = $row['Time'];
+    }
+    
+    $stmt->close();
+    $mysqli->close();
+    
+    // All available time slots
+    $allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+    $isFullyBooked = count($bookedSlots) === count($allSlots);
+    
+    echo json_encode([
+        'success' => true,
+        'date' => $date,
+        'bookedSlots' => $bookedSlots,
+        'isFullyBooked' => $isFullyBooked,
+        'availableSlots' => array_values(array_diff($allSlots, $bookedSlots))
+    ]);
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -391,11 +512,23 @@
     cursor:pointer;
     transition:background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
-  .slot:hover{border-color:var(--clay);}
+  .slot:hover:not(:disabled){border-color:var(--clay);}
   .slot.selected{
     background:var(--clay); color:var(--cream); border-color:var(--clay);
   }
   .slot:focus-visible{outline:2px solid var(--clay); outline-offset:2px;}
+  .slot:disabled{
+    opacity:0.5;
+    cursor:not-allowed;
+    background:var(--sand-deep);
+    color:#999;
+  }
+  .slot.booked{
+    opacity:0.4;
+    cursor:not-allowed;
+    background:#e0e0e0;
+    color:#666;
+  }
 
   .form-actions{margin-top:28px;}
   .form-note{
@@ -653,7 +786,6 @@
                 <option>Colour &amp; Highlights</option>
                 <option>Wash, Treat &amp; Blow-dry</option>
                 <option>Beard Shape-up</option>
-                <option>Not sure — advise me</option>
               </select>
             </div>
           </div>
@@ -666,26 +798,17 @@
             <div class="slot-grid" id="slotGrid" role="group" aria-label="Preferred time">
               <!-- slots injected by JS -->
             </div>
+            <input type="hidden" id="bf-time" name="time">
           </div>
           <div class="field">
             <label for="bf-notes">Anything we should know? (optional)</label>
             <textarea id="bf-notes" name="notes" placeholder="Hair length, reference photo, stylist preference…"></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-clay">Request this booking</button>
-            <div class="form-note">This is a request, not a confirmed appointment. We'll confirm directly with you.</div>
+            <button type="submit" class="btn btn-clay">Submit booking</button>
+            <div class="form-note">Your booking will be saved. If you want to verify your booking, please call 021 910 0519.</div>
           </div>
-
-          <div class="confirm-panel" id="confirmPanel">
-            <h4>Almost there — send your request</h4>
-            <div class="summary" id="confirmSummary"></div>
-            <div class="confirm-actions">
-              <a href="#" id="waLink" class="btn btn-gold" target="_blank" rel="noopener">Send via WhatsApp</a>
-              <button type="button" class="btn btn-ghost" id="copyBtn" style="border-color:var(--line-light); color:var(--ink-warm);">Copy details</button>
-              <a href="tel:+27219100519" class="btn btn-ghost" style="border-color:var(--line-light); color:var(--ink-warm);">Call instead</a>
-            </div>
-            <div class="toast" id="copyToast">Copied to clipboard.</div>
-          </div>
+          <div class="toast" id="bookingToast" style="margin-top:12px; opacity:0; transition:opacity 0.25s;">Booking saved successfully.</div>
         </form>
       </div>
     </div>
@@ -748,33 +871,124 @@
   // date min = today
   const dateInput = document.getElementById('bf-date');
   const today = new Date();
-  dateInput.min = today.toISOString().split('T')[0];
+  const todayStr = today.toISOString().split('T')[0];
+  dateInput.min = todayStr;
 
   // time slots
   const slotGrid = document.getElementById('slotGrid');
-  const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+  const allSlots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+  const slotButtons = {};
   let selectedSlot = null;
-  slots.forEach(time => {
+  let bookedSlotsForDate = [];
+  
+  // Initialize all slot buttons
+  allSlots.forEach(time => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'slot';
     btn.textContent = time;
+    btn.dataset.time = time;
     btn.addEventListener('click', () => {
+      if (btn.disabled || btn.classList.contains('booked')) return;
       document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
       btn.classList.add('selected');
       selectedSlot = time;
     });
+    slotButtons[time] = btn;
     slotGrid.appendChild(btn);
   });
 
-  // booking form submit -> build summary + whatsapp link
-  const form = document.getElementById('bookingForm');
-  const confirmPanel = document.getElementById('confirmPanel');
-  const confirmSummary = document.getElementById('confirmSummary');
-  const waLink = document.getElementById('waLink');
-  const SALON_WHATSAPP = '27219100519'; // update if the salon uses a different WhatsApp number
+  // Function to update available slots based on date
+  async function updateAvailableSlots(dateStr) {
+    if (!dateStr) {
+      // Reset all slots if no date selected
+      allSlots.forEach(time => {
+        slotButtons[time].disabled = false;
+        slotButtons[time].classList.remove('booked', 'selected');
+      });
+      return;
+    }
 
-  form.addEventListener('submit', (e) => {
+    try {
+      const response = await fetch('?action=getSlots&date=' + encodeURIComponent(dateStr));
+      const data = await response.json();
+      
+      if (data.success) {
+        bookedSlotsForDate = data.bookedSlots;
+        
+        // Update slot states
+        allSlots.forEach(time => {
+          const btn = slotButtons[time];
+          const isBooked = data.bookedSlots.includes(time);
+          
+          if (isBooked) {
+            btn.disabled = true;
+            btn.classList.add('booked');
+            btn.classList.remove('selected');
+            btn.title = 'This time slot is booked';
+          } else {
+            btn.disabled = false;
+            btn.classList.remove('booked');
+            btn.title = '';
+          }
+        });
+        
+        // If date is fully booked, disable the date field for future selections
+        if (data.isFullyBooked) {
+          dateInput.dataset.fullyBooked = dateStr;
+        }
+        
+        // Clear selected slot if it was in the booked list
+        if (selectedSlot && bookedSlotsForDate.includes(selectedSlot)) {
+          selectedSlot = null;
+          document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+        }
+      }
+    } catch (err) {
+      console.error('Could not fetch available slots:', err);
+    }
+  }
+
+  // Event listener for date changes
+  dateInput.addEventListener('change', (e) => {
+    updateAvailableSlots(e.target.value);
+  });
+
+  // Initial load - disable fully booked dates
+  async function disableFullyBookedDates() {
+    try {
+      // Get all dates to check which ones are fully booked
+      const nextDays = 90; // Check next 90 days
+      const fullyBookedDates = new Set();
+      
+      for (let i = 0; i < nextDays; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() + i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        
+        const response = await fetch('?action=getSlots&date=' + encodeURIComponent(dateStr));
+        const data = await response.json();
+        
+        if (data.success && data.isFullyBooked) {
+          fullyBookedDates.add(dateStr);
+        }
+      }
+      
+      // Store fully booked dates for validation
+      dateInput.dataset.fullyBookedDates = JSON.stringify(Array.from(fullyBookedDates));
+    } catch (err) {
+      console.error('Could not load fully booked dates:', err);
+    }
+  }
+
+  // Call this on page load (with a slight delay to avoid blocking)
+  setTimeout(disableFullyBookedDates, 500);
+
+  // booking form submit -> save booking to database
+  const form = document.getElementById('bookingForm');
+  const bookingToast = document.getElementById('bookingToast');
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (!selectedSlot) {
@@ -782,45 +996,47 @@
       return;
     }
 
-    const data = {
-      name: document.getElementById('bf-name').value.trim(),
-      phone: document.getElementById('bf-phone').value.trim(),
-      service: document.getElementById('bf-service').value,
-      date: document.getElementById('bf-date').value,
-      notes: document.getElementById('bf-notes').value.trim(),
-    };
-
-    const prettyDate = data.date
-      ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })
-      : '';
-
-    const message =
-`Hi Style Bay, I'd like to book a chair:
-Name: ${data.name}
-Phone: ${data.phone}
-Service: ${data.service}
-Date: ${prettyDate}
-Time: ${selectedSlot}${data.notes ? `\nNotes: ${data.notes}` : ''}`;
-
-    confirmSummary.textContent = message;
-    waLink.href = `https://wa.me/${SALON_WHATSAPP}?text=${encodeURIComponent(message)}`;
-    confirmPanel.classList.add('show');
-    confirmPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    confirmPanel.dataset.message = message;
-  });
-
-  document.getElementById('copyBtn').addEventListener('click', async () => {
-    const message = confirmPanel.dataset.message || confirmSummary.textContent;
-    const toast = document.getElementById('copyToast');
-    try {
-      await navigator.clipboard.writeText(message);
-      toast.textContent = 'Copied to clipboard.';
-    } catch (err) {
-      toast.textContent = 'Could not copy automatically — select the text above and copy manually.';
+    // Double-check that the slot is not booked
+    const selectedDate = dateInput.value;
+    const response = await fetch('?action=getSlots&date=' + encodeURIComponent(selectedDate));
+    const data = await response.json();
+    
+    if (data.success && data.bookedSlots.includes(selectedSlot)) {
+      alert('This time slot has just been booked. Please select another slot.');
+      updateAvailableSlots(selectedDate);
+      return;
     }
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
+
+    document.getElementById('bf-time').value = selectedSlot;
+    const formData = new FormData(form);
+    formData.set('ajax', '1');
+
+    let result;
+    try {
+      const response = await fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+      });
+      result = await response.json();
+    } catch (err) {
+      alert('Could not save booking. Please try again.');
+      return;
+    }
+
+    if (!result.success) {
+      alert(result.message || 'Could not save booking. Please try again.');
+      return;
+    }
+
+    bookingToast.textContent = 'Your booking has been saved. Call 021 910 0519 if you want to verify it.';
+    bookingToast.style.opacity = '1';
+    setTimeout(() => {
+      bookingToast.style.opacity = '0';
+    }, 5000);
+
+    form.reset();
+    selectedSlot = null;
+    document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
   });
 </script>
 
