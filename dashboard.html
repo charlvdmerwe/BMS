@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Style Bay — Booking Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0E1722;
+    --bay: #152537;
+    --bay-light: #23405C;
+    --gold: #CFA052;
+    --gold-soft: #E8C988;
+    --clay: #B5562F;
+    --clay-dark: #8f4224;
+    --sand: #F1E8D8;
+    --sand-deep: #E3D4B7;
+    --cream: #FAF6EC;
+    --ink-warm: #241B12;
+    --muted: #7A6644;
+    --line-dark: rgba(232,201,136,0.18);
+    --line-light: rgba(36,27,18,0.14);
+    --green: #3a7d5a;
+    --green-bg: #eaf5ef;
+    --red-bg: #fdf0ed;
+    --amber-bg: #fdf6e3;
+    --sidebar-w: 220px;
+    --radius: 3px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Work Sans', sans-serif;
+    background: #f5f0e8;
+    color: var(--ink-warm);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--ink);
+    color: var(--cream);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 30;
+    border-right: 1px solid var(--line-dark);
+  }
+
+  .sidebar-brand {
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--line-dark);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-brand svg { width: 26px; height: 26px; flex-shrink: 0; }
+
+  .brand-text { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--cream); line-height: 1.2; }
+  .brand-sub { font-family: 'Space Mono', monospace; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(250,246,236,0.4); display: block; margin-top: 2px; }
+
+  nav.sidebar-nav {
+    padding: 18px 0;
+    flex: 1;
+  }
+
+  .nav-section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(250,246,236,0.3);
+    padding: 14px 20px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    color: rgba(250,246,236,0.65);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    text-decoration: none;
+    user-select: none;
+  }
+
+  .nav-item:hover { color: var(--cream); background: rgba(255,255,255,0.04); }
+  .nav-item.active { color: var(--gold-soft); border-left-color: var(--gold); background: rgba(207,160,82,0.08); }
+
+  .nav-item .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--clay);
+    color: var(--cream);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 20px;
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--line-dark);
+    font-size: 0.78rem;
+    color: rgba(250,246,236,0.35);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #4caf7d;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  /* ===== MAIN ===== */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar {
+    background: var(--cream);
+    border-bottom: 1px solid var(--line-light);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-left h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.22rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .topbar-left .topbar-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.66rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .topbar-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .btn {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 9px 16px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+  }
+
+  .btn:active { transform: translateY(1px); }
+  .btn-gold { background: var(--gold); color: var(--ink); }
+  .btn-gold:hover { background: var(--gold-soft); }
+  .btn-outline { background: transparent; border-color: var(--line-light); color: var(--ink-warm); }
+  .btn-outline:hover { border-color: var(--clay); color: var(--clay); }
+  .btn-clay { background: var(--clay); color: var(--cream); border-color: var(--clay); }
+  .btn-clay:hover { background: var(--clay-dark); }
+  .btn-ghost-sm { background: transparent; border: 1px solid var(--line-light); color: var(--muted); font-size: 0.78rem; padding: 5px 10px; }
+  .btn-ghost-sm:hover { border-color: var(--clay); color: var(--clay); }
+
+  /* ===== CONTENT ===== */
+  .content {
+    padding: 28px 32px 48px;
+    flex: 1;
+  }
+
+  /* ===== PANELS ===== */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ===== STAT STRIP ===== */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line-light);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .stat-tile {
+    background: var(--cream);
+    padding: 20px 22px;
+  }
+
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 1.9rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .stat-value .currency {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin-right: 2px;
+  }
+
+  .stat-meta {
+    font-size: 0.76rem;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+
+  .stat-up { color: var(--green); }
+  .stat-down { color: var(--clay); }
+
+  /* ===== TWO-COL LAYOUT ===== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ===== SECTION CARD ===== */
+  .card {
+    background: var(--cream);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .card-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ===== BOOKING TABLE ===== */
+  .booking-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .booking-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-light);
+    background: #f7f2e8;
+    white-space: nowrap;
+  }
+
+  .booking-table td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line-light);
+    font-size: 0.88rem;
+    vertical-align: middle;
+  }
+
+  .booking-table tr:last-child td { border-bottom: none; }
+  .booking-table tbody tr:hover { background: #faf7f0; }
+
+  .client-name { font-weight: 600; color: var(--ink); }
+  .client-phone { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  .service-tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    background: var(--sand-deep);
+    color: var(--muted);
+  }
+
+  .time-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--ink-warm);
+    white-space: nowrap;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .status-badge::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-new { background: var(--amber-bg); color: #8a6800; }
+  .status-new::before { background: #d4a017; }
+  .status-confirmed { background: var(--green-bg); color: #2a5e41; }
+  .status-confirmed::before { background: var(--green); }
+  .status-done { background: #f0f0f0; color: #666; }
+  .status-done::before { background: #aaa; }
+  .status-noshow { background: var(--red-bg); color: #7a2010; }
+  .status-noshow::before { background: var(--clay); }
+
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .booking-table tbody tr:hover .row-actions { opacity: 1; }
+
+  /* ===== QUICK ACTIONS SIDEBAR ===== */
+  .quick-slot {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-light);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .quick-slot:last-child { border-bottom: none; }
+  .quick-slot:hover { background: #f7f2e8; }
+
+  .qs-time {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    width: 42px;
+    flex-shrink: 0;
+  }
+
+  .qs-bar {
+    width: 3px;
+    border-radius: 2px;
+    align-self: stretch;
+    flex-shrink: 0;
+    min-height: 36px;
+  }
+
+  .qs-info { flex: 1; min-width: 0; }
+  .qs-name { font-weight: 600; font-size: 0.85rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qs-service { font-size: 0.76rem; color: var(--muted); }
+
+  .qs-status { flex-shrink: 0; }
+
+  /* slot colours */
+  .qs-bar.new { background: #d4a017; }
+  .qs-bar.confirmed { background: var(--green); }
+  .qs-bar.done { background: #ccc; }
+
+  /* ===== MINI CALENDAR ===== */
+  .mini-cal {
+    padding: 16px;
+  }
+
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .cal-month {
+    font-family: 'Fraunces', serif;
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .cal-nav {
+    display: flex;
+    gap: 6px;
+  }
+
+  .cal-nav button {
+    background: none;
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .cal-nav button:hover { border-color: var(--clay); color: var(--clay); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    text-align: center;
+  }
+
+  .cal-dow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 4px 0;
+  }
+
+  .cal-day {
+    padding: 5px 2px;
+    font-size: 0.82rem;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.1s, color 0.1s;
+    color: var(--ink-warm);
+  }
+
+  .cal-day:hover { background: var(--sand-deep); }
+  .cal-day.today { background: var(--ink); color: var(--cream); font-weight: 700; }
+  .cal-day.selected { background: var(--clay); color: var(--cream); }
+  .cal-day.has-booking::after {
+    content: "";
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+    position: absolute;
+    bottom: 2px; left: 50%; transform: translateX(-50%);
+  }
+
+  .cal-day.today.has-booking::after,
+  .cal-day.selected.has-booking::after { background: var(--gold-soft); }
+
+  .cal-day.other-month { color: rgba(36,27,18,0.25); }
+  .cal-day.closed { color: rgba(36,27,18,0.2); pointer-events: none; }
+
+  /* ===== NOTES ===== */
+  .notes-item {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-light);
+    font-size: 0.84rem;
+  }
+
+  .notes-item:last-child { border-bottom: none; }
+  .notes-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  /* ===== SERVICE BREAKDOWN ===== */
+  .svc-row {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-light);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .svc-row:last-child { border-bottom: none; }
+
+  .svc-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink);
+    flex: 1;
+  }
+
+  .svc-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    width: 30px;
+    text-align: right;
+  }
+
+  .svc-bar-wrap {
+    width: 80px;
+    height: 5px;
+    background: var(--sand-deep);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .svc-bar {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+
+  .svc-revenue {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ink-warm);
+    width: 54px;
+    text-align: right;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(14,23,34,0.6);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(14,23,34,0.35);
+    overflow: hidden;
+  }
+
+  .modal-head {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 20px 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .modal-head h3 { font-family: 'Fraunces', serif; font-size: 1.1rem; }
+  .modal-head .modal-sub { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; color: rgba(250,246,236,0.5); text-transform: uppercase; margin-top: 3px; }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: rgba(250,246,236,0.5);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .modal-close:hover { color: var(--cream); }
+
+  .modal-body { padding: 24px; }
+
+  .modal-row {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 14px;
+  }
+
+  .modal-field {
+    flex: 1;
+  }
+
+  .modal-field label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .modal-field input,
+  .modal-field select,
+  .modal-field textarea {
+    width: 100%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    border: 1px solid var(--line-light);
+    background: var(--sand);
+    color: var(--ink-warm);
+    border-radius: var(--radius);
+  }
+
+  .modal-field textarea { min-height: 60px; resize: vertical; }
+
+  .modal-field input:focus,
+  .modal-field select:focus,
+  .modal-field textarea:focus { outline: 2px solid var(--clay); outline-offset: 1px; }
+
+  .modal-foot {
+    padding: 16px 24px;
+    border-top: 1px solid var(--line-light);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* Detail modal */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .detail-item .detail-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .detail-item .detail-value {
+    font-size: 0.9rem;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .detail-note {
+    background: var(--sand);
+    border-left: 3px solid var(--gold);
+    padding: 10px 14px;
+    font-size: 0.84rem;
+    color: var(--ink-warm);
+    margin-top: 14px;
+    border-radius: 0 2px 2px 0;
+    line-height: 1.5;
+  }
+
+  .detail-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== TOAST ===== */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.76rem;
+    box-shadow: 0 4px 16px rgba(14,23,34,0.25);
+    border-left: 3px solid var(--gold);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s, transform 0.25s;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ===== TABS ===== */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--line-light);
+    background: var(--cream);
+    padding: 0 20px;
+  }
+
+  .tab-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--clay); border-bottom-color: var(--clay); }
+
+  /* ===== FILTER BAR ===== */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line-light);
+    flex-wrap: wrap;
+  }
+
+  .filter-bar input[type="date"],
+  .filter-bar select {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.82rem;
+    padding: 7px 10px;
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    background: var(--sand);
+    color: var(--ink-warm);
+  }
+
+  .filter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    padding: 44px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .empty-state svg { opacity: 0.2; margin-bottom: 12px; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .two-col { grid-template-columns: 1fr; }
+    .stat-strip { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M3 22c2.5-3 4.5-3 7 0s4.5 3 7 0 4.5-3 7 0 4.5 3 5 0" stroke="#CFA052" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M5 18 9 7l4 8 3-9 3 9 4-8 4 11" stroke="#E8C988" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div>
+      <div class="brand-text">The Style Bay</div>
+      <span class="brand-sub">Dashboard</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Manage</div>
+    <div class="nav-item active" data-panel="today">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 7h14" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v4M11 1v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Today's Chair
+      <span class="nav-badge" id="todayBadge">5</span>
+    </div>
+    <div class="nav-item" data-panel="bookings">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6h8M4 9h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      All Bookings
+      <span class="nav-badge" id="newBadge">2</span>
+    </div>
+    <div class="nav-item" data-panel="new">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Add Booking
+    </div>
+
+    <div class="nav-section-label" style="margin-top:8px;">Insights</div>
+    <div class="nav-item" data-panel="services">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 13V9M6 13V6M10 13V4M14 13V2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Services &amp; Revenue
+    </div>
+
+    <div class="nav-section-label" style="margin-top:8px;">Salon</div>
+    <div class="nav-item" id="waLink" data-panel="settings">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Salon Info
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <span class="status-dot"></span>Open today · Tue–Sat
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="topbarTitle">Today's Chair</h1>
+      <div class="topbar-sub" id="topbarSub">Tuesday · Old Oak Centre, Belair</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbarDate"></div>
+      <button class="btn btn-gold" onclick="openNewBookingModal()">+ New booking</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ======== PANEL: TODAY ======== -->
+    <div class="panel active" id="panel-today">
+      <div class="stat-strip">
+        <div class="stat-tile">
+          <div class="stat-label">Today's bookings</div>
+          <div class="stat-value">5</div>
+          <div class="stat-meta">3 confirmed · 2 pending</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Chairs filled</div>
+          <div class="stat-value">5 <span style="font-size:1rem;font-family:'Work Sans';font-weight:400;color:var(--muted)">/ 9</span></div>
+          <div class="stat-meta">4 slots open</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Est. revenue today</div>
+          <div class="stat-value"><span class="currency">R</span>1 520</div>
+          <div class="stat-meta stat-up">↑ R340 vs last Tue</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Pending replies</div>
+          <div class="stat-value" style="color:var(--clay)">2</div>
+          <div class="stat-meta">Need confirmation</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <!-- Schedule -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Today's schedule</div>
+              <div class="card-sub">09:00 – 18:00</div>
+            </div>
+            <button class="btn btn-outline" onclick="openNewBookingModal()">+ Add slot</button>
+          </div>
+
+          <div id="todaySlots"></div>
+        </div>
+
+        <!-- Right column -->
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <!-- Mini calendar -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Week view</div>
+            </div>
+            <div class="mini-cal">
+              <div class="cal-header">
+                <div class="cal-month" id="calMonthLabel"></div>
+                <div class="cal-nav">
+                  <button onclick="shiftCal(-1)">‹</button>
+                  <button onclick="shiftCal(1)">›</button>
+                </div>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+            </div>
+          </div>
+
+          <!-- Quick notes -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Salon notes</div>
+            </div>
+            <div class="notes-item">
+              <div class="notes-label">Today</div>
+              Thandi brings her own extensions for the 14:00 install. No extra charge for product.
+            </div>
+            <div class="notes-item">
+              <div class="notes-label">This week</div>
+              Stock up on relaxer — running low. Friday looks busy, consider pre-booking lunch hour.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PANEL: ALL BOOKINGS ======== -->
+    <div class="panel" id="panel-bookings">
+      <div class="stat-strip">
+        <div class="stat-tile">
+          <div class="stat-label">Total this month</div>
+          <div class="stat-value">42</div>
+          <div class="stat-meta stat-up">↑ 8 vs last month</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Confirmed</div>
+          <div class="stat-value">35</div>
+          <div class="stat-meta">83 % rate</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">No-shows</div>
+          <div class="stat-value stat-down" style="color:var(--clay)">3</div>
+          <div class="stat-meta stat-down">↑ 1 vs last month</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Month revenue</div>
+          <div class="stat-value"><span class="currency">R</span>12 340</div>
+          <div class="stat-meta stat-up">↑ R1 680 vs last month</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="all">All</button>
+          <button class="tab-btn" data-tab="new">New requests</button>
+          <button class="tab-btn" data-tab="confirmed">Confirmed</button>
+          <button class="tab-btn" data-tab="done">Completed</button>
+          <button class="tab-btn" data-tab="noshow">No-shows</button>
+        </div>
+        <div class="filter-bar">
+          <span class="filter-label">Filter:</span>
+          <input type="date" id="filterDate">
+          <select id="filterService">
+            <option value="">All services</option>
+            <option>Cut &amp; Trim</option>
+            <option>Braids &amp; Cornrows</option>
+            <option>Weave / Extensions</option>
+            <option>Colour &amp; Highlights</option>
+            <option>Wash, Treat &amp; Blow-dry</option>
+            <option>Beard Shape-up</option>
+          </select>
+          <button class="btn btn-ghost-sm" onclick="clearFilters()">Clear</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="booking-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Service</th>
+                <th>Date &amp; Time</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PANEL: NEW BOOKING ======== -->
+    <div class="panel" id="panel-new">
+      <div class="card" style="max-width:580px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Add a booking manually</div>
+            <div class="card-sub">Walk-in or phone booking</div>
+          </div>
+        </div>
+        <div style="padding:24px;">
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Client name</label>
+              <input type="text" id="nb-name" placeholder="e.g. Nomvula Dlamini">
+            </div>
+            <div class="modal-field">
+              <label>Phone</label>
+              <input type="tel" id="nb-phone" placeholder="082 000 0000">
+            </div>
+          </div>
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Service</label>
+              <select id="nb-service">
+                <option value="" disabled selected>Choose</option>
+                <option>Cut &amp; Trim</option>
+                <option>Braids &amp; Cornrows</option>
+                <option>Weave / Extensions</option>
+                <option>Colour &amp; Highlights</option>
+                <option>Wash, Treat &amp; Blow-dry</option>
+                <option>Beard Shape-up</option>
+              </select>
+            </div>
+            <div class="modal-field">
+              <label>Status</label>
+              <select id="nb-status">
+                <option value="new">New request</option>
+                <option value="confirmed">Confirmed</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Date</label>
+              <input type="date" id="nb-date">
+            </div>
+            <div class="modal-field">
+              <label>Time</label>
+              <select id="nb-time">
+                <option>09:00</option><option>10:00</option><option>11:00</option>
+                <option>12:00</option><option>13:00</option><option>14:00</option>
+                <option>15:00</option><option>16:00</option><option>17:00</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-field" style="margin-bottom:24px;">
+            <label>Notes (optional)</label>
+            <textarea id="nb-notes" placeholder="Hair length, preferences, special requests…"></textarea>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-clay" onclick="saveNewBooking()">Save booking</button>
+            <button class="btn btn-outline" onclick="switchPanel('today')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PANEL: SERVICES ======== -->
+    <div class="panel" id="panel-services">
+      <div class="stat-strip">
+        <div class="stat-tile">
+          <div class="stat-label">Best seller</div>
+          <div class="stat-value" style="font-size:1.2rem; font-family:'Fraunces',serif; font-weight:600; padding-top:4px;">Weaves &amp; Extensions</div>
+          <div class="stat-meta">14 bookings this month</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Avg booking value</div>
+          <div class="stat-value"><span class="currency">R</span>294</div>
+          <div class="stat-meta stat-up">↑ R22 vs last month</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Busiest day</div>
+          <div class="stat-value" style="font-size:1.3rem; font-family:'Fraunces',serif; font-weight:600; padding-top:6px;">Saturday</div>
+          <div class="stat-meta">avg 9 bookings</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Busiest slot</div>
+          <div class="stat-value" style="font-size:1.3rem; font-family:'Fraunces',serif; font-weight:600; padding-top:6px;">10:00</div>
+          <div class="stat-meta">most requested time</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Services breakdown — this month</div>
+        </div>
+        <div id="serviceBreakdown"></div>
+      </div>
+    </div>
+
+    <!-- ======== PANEL: SETTINGS ======== -->
+    <div class="panel" id="panel-settings">
+      <div class="card" style="max-width:540px;">
+        <div class="card-header">
+          <div class="card-title">Salon info</div>
+        </div>
+        <div style="padding:24px;">
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Salon name</label>
+              <input type="text" value="The Style Bay Unisex Hair Salon">
+            </div>
+          </div>
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Address</label>
+              <input type="text" value="39 Meerlust St, Old Oak Centre, Belair, Cape Town">
+            </div>
+          </div>
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Phone</label>
+              <input type="tel" value="021 910 0519">
+            </div>
+            <div class="modal-field">
+              <label>WhatsApp number</label>
+              <input type="tel" value="27219100519">
+            </div>
+          </div>
+          <div class="modal-row">
+            <div class="modal-field">
+              <label>Open days</label>
+              <input type="text" value="Tuesday – Saturday">
+            </div>
+            <div class="modal-field">
+              <label>Hours</label>
+              <input type="text" value="09:00 – 18:00">
+            </div>
+          </div>
+          <button class="btn btn-clay" onclick="showToast('Salon info saved.')">Save changes</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== DETAIL MODAL ===== -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="dm-name">Client Name</h3>
+        <div class="modal-sub" id="dm-sub">Service · Date · Time</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" id="dm-grid"></div>
+      <div class="detail-note" id="dm-note" style="display:none;"></div>
+      <div class="detail-actions" id="dm-actions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NEW BOOKING MODAL ===== -->
+<div class="modal-backdrop" id="newModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>New booking</h3>
+        <div class="modal-sub">Walk-in or phone booking</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('newModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Client name</label>
+          <input type="text" id="mnb-name" placeholder="e.g. Nomvula Dlamini">
+        </div>
+        <div class="modal-field">
+          <label>Phone</label>
+          <input type="tel" id="mnb-phone" placeholder="082 000 0000">
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Service</label>
+          <select id="mnb-service">
+            <option value="" disabled selected>Choose</option>
+            <option>Cut &amp; Trim</option>
+            <option>Braids &amp; Cornrows</option>
+            <option>Weave / Extensions</option>
+            <option>Colour &amp; Highlights</option>
+            <option>Wash, Treat &amp; Blow-dry</option>
+            <option>Beard Shape-up</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Status</label>
+          <select id="mnb-status">
+            <option value="new">New request</option>
+            <option value="confirmed">Confirmed</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Date</label>
+          <input type="date" id="mnb-date">
+        </div>
+        <div class="modal-field">
+          <label>Time</label>
+          <select id="mnb-time">
+            <option>09:00</option><option>10:00</option><option>11:00</option>
+            <option>12:00</option><option>13:00</option><option>14:00</option>
+            <option>15:00</option><option>16:00</option><option>17:00</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Notes (optional)</label>
+        <textarea id="mnb-notes" placeholder="Hair length, preferences, special requests…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('newModal')">Cancel</button>
+      <button class="btn btn-clay" onclick="saveModalBooking()">Save booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container">
+  <div class="toast" id="mainToast"></div>
+</div>
+
+<script>
+// ===== DATA =====
+const SERVICES = [
+  { name: 'Weave / Extensions', count: 14, revenue: 7200 },
+  { name: 'Braids & Cornrows', count: 10, revenue: 3100 },
+  { name: 'Cut & Trim', count: 9, revenue: 1260 },
+  { name: 'Colour & Highlights', count: 5, revenue: 2100 },
+  { name: 'Wash, Treat & Blow-dry', count: 3, revenue: 540 },
+  { name: 'Beard Shape-up', count: 1, revenue: 90 },
+];
+
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let bookings = [
+  { id:1, name:'Thandi Joubert', phone:'082 111 2233', service:'Weave / Extensions', date:todayStr, time:'09:00', status:'confirmed', notes:'Brings own hair. Sew-in, full head.' },
+  { id:2, name:'Sipho Dlamini', phone:'073 445 6677', service:'Cut & Trim', date:todayStr, time:'10:00', status:'confirmed', notes:'' },
+  { id:3, name:'Nomsa Petersen', phone:'083 998 1122', service:'Braids & Cornrows', date:todayStr, time:'11:00', status:'new', notes:'Box braids, waist-length. First visit.' },
+  { id:4, name:'Kezia Williams', phone:'061 233 4455', service:'Colour & Highlights', date:todayStr, time:'14:00', status:'confirmed', notes:'Patch test done last week. Honey highlights.' },
+  { id:5, name:'Luca van der Berg', phone:'084 776 8899', service:'Beard Shape-up', date:todayStr, time:'16:00', status:'new', notes:'' },
+  { id:6, name:'Aisha Mokoena', phone:'072 334 5566', service:'Wash, Treat & Blow-dry', date:offsetDate(-2), time:'10:00', status:'done', notes:'' },
+  { id:7, name:'Priya Naidoo', phone:'083 112 3344', service:'Weave / Extensions', date:offsetDate(-2), time:'13:00', status:'done', notes:'Closure install.' },
+  { id:8, name:'James Fortune', phone:'076 889 0011', service:'Cut & Trim', date:offsetDate(-3), time:'09:00', status:'noshow', notes:'' },
+  { id:9, name:'Fatima Adams', phone:'082 667 8899', service:'Braids & Cornrows', date:offsetDate(1), time:'11:00', status:'confirmed', notes:'Cornrows, natural hair.' },
+  { id:10, name:'Kagiso Molete', phone:'073 221 3344', service:'Colour & Highlights', date:offsetDate(1), time:'14:00', status:'new', notes:'' },
+];
+
+let nextId = 11;
+
+function offsetDate(days) {
+  const d = new Date(today);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+const PRICES = {
+  'Cut & Trim': 160,
+  'Braids & Cornrows': 300,
+  'Weave / Extensions': 550,
+  'Colour & Highlights': 400,
+  'Wash, Treat & Blow-dry': 180,
+  'Beard Shape-up': 90,
+};
+
+function prettyDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short' });
+}
+
+// ===== NAV =====
+const panels = ['today','bookings','new','services','settings'];
+const panelTitles = {
+  today: "Today's Chair",
+  bookings: "All Bookings",
+  new: "Add Booking",
+  services: "Services & Revenue",
+  settings: "Salon Info"
+};
+
+function switchPanel(name) {
+  panels.forEach(p => {
+    document.getElementById('panel-' + p).classList.toggle('active', p === name);
+  });
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.panel === name);
+  });
+  document.getElementById('topbarTitle').textContent = panelTitles[name];
+  if (name === 'bookings') renderBookingsTable();
+  if (name === 'services') renderServices();
+  if (name === 'today') renderTodaySlots();
+}
+
+document.querySelectorAll('.nav-item[data-panel]').forEach(el => {
+  el.addEventListener('click', () => switchPanel(el.dataset.panel));
+});
+
+// ===== TOPBAR DATE =====
+document.getElementById('topbarDate').textContent =
+  today.toLocaleDateString('en-ZA', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+document.getElementById('topbarSub').textContent =
+  DAYS[today.getDay()] + ' · Old Oak Centre, Belair';
+
+// ===== TODAY SLOTS =====
+function renderTodaySlots() {
+  const container = document.getElementById('todaySlots');
+  const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+  const todayBookings = bookings.filter(b => b.date === todayStr);
+
+  container.innerHTML = '';
+  slots.forEach(time => {
+    const b = todayBookings.find(b => b.time === time);
+    const el = document.createElement('div');
+    el.className = 'quick-slot';
+    if (b) {
+      el.innerHTML = `
+        <div class="qs-time">${time}</div>
+        <div class="qs-bar ${b.status}"></div>
+        <div class="qs-info">
+          <div class="qs-name">${b.name}</div>
+          <div class="qs-service">${b.service}</div>
+        </div>
+        <div class="qs-status">
+          <span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>
+        </div>`;
+      el.addEventListener('click', () => openDetailModal(b.id));
+    } else {
+      el.innerHTML = `
+        <div class="qs-time">${time}</div>
+        <div class="qs-bar" style="background:var(--line-light);"></div>
+        <div class="qs-info" style="color:var(--muted); font-size:0.82rem;">Open slot</div>
+        <button class="btn btn-ghost-sm" onclick="event.stopPropagation(); openNewBookingModalAt('${time}')">+ Book</button>`;
+    }
+    container.appendChild(el);
+  });
+
+  // badges
+  const todayNew = todayBookings.filter(b => b.status === 'new').length;
+  document.getElementById('newBadge').textContent = bookings.filter(b => b.status === 'new').length;
+  document.getElementById('todayBadge').textContent = todayBookings.length;
+}
+
+function statusLabel(s) {
+  return { new: 'New', confirmed: 'Confirmed', done: 'Done', noshow: 'No-show' }[s] || s;
+}
+
+// ===== BOOKINGS TABLE =====
+let currentTab = 'all';
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = btn.dataset.tab;
+    renderBookingsTable();
+  });
+});
+
+document.getElementById('filterDate').addEventListener('change', renderBookingsTable);
+document.getElementById('filterService').addEventListener('change', renderBookingsTable);
+
+function clearFilters() {
+  document.getElementById('filterDate').value = '';
+  document.getElementById('filterService').value = '';
+  renderBookingsTable();
+}
+
+function renderBookingsTable() {
+  const filterDate = document.getElementById('filterDate').value;
+  const filterService = document.getElementById('filterService').value;
+  const tbody = document.getElementById('bookingsTableBody');
+
+  let filtered = [...bookings];
+  if (currentTab !== 'all') filtered = filtered.filter(b => b.status === currentTab);
+  if (filterDate) filtered = filtered.filter(b => b.date === filterDate);
+  if (filterService) filtered = filtered.filter(b => b.service === filterService);
+
+  filtered.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No bookings match this filter.</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(b => `
+    <tr>
+      <td>
+        <div class="client-name">${b.name}</div>
+        <div class="client-phone">${b.phone}</div>
+      </td>
+      <td><span class="service-tag">${b.service}</span></td>
+      <td><div class="time-badge">${prettyDate(b.date)}<br><span style="color:var(--gold);">${b.time}</span></div></td>
+      <td><span class="status-badge status-${b.status}">${statusLabel(b.status)}</span></td>
+      <td style="font-size:0.82rem; color:var(--muted); max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${b.notes || '—'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-ghost-sm" onclick="openDetailModal(${b.id})">View</button>
+          ${b.status === 'new' ? `<button class="btn btn-outline" style="font-size:0.75rem;padding:5px 9px;color:var(--green);border-color:var(--green)" onclick="updateStatus(${b.id},'confirmed')">✓ Confirm</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ===== DETAIL MODAL =====
+function openDetailModal(id) {
+  const b = bookings.find(x => x.id === id);
+  if (!b) return;
+
+  document.getElementById('dm-name').textContent = b.name;
+  document.getElementById('dm-sub').textContent = `${b.service} · ${prettyDate(b.date)} · ${b.time}`;
+
+  const grid = document.getElementById('dm-grid');
+  grid.innerHTML = [
+    ['Phone', b.phone],
+    ['Service', b.service],
+    ['Date', prettyDate(b.date)],
+    ['Time', b.time],
+    ['Status', `<span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>`],
+    ['Est. price', `R ${PRICES[b.service] || '—'}`],
+  ].map(([label, val]) => `
+    <div class="detail-item">
+      <div class="detail-label">${label}</div>
+      <div class="detail-value">${val}</div>
+    </div>`).join('');
+
+  const noteEl = document.getElementById('dm-note');
+  if (b.notes) { noteEl.style.display = ''; noteEl.textContent = b.notes; }
+  else { noteEl.style.display = 'none'; }
+
+  const actions = document.getElementById('dm-actions');
+  actions.innerHTML = '';
+
+  const addBtn = (label, cls, onclick) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + cls;
+    btn.textContent = label;
+    btn.onclick = onclick;
+    actions.appendChild(btn);
+  };
+
+  if (b.status === 'new') {
+    addBtn('✓ Confirm', 'btn-clay', () => { updateStatus(id, 'confirmed'); closeModal('detailModal'); });
+  }
+  if (b.status === 'confirmed') {
+    addBtn('Mark done', 'btn-outline', () => { updateStatus(id, 'done'); closeModal('detailModal'); });
+    addBtn('No-show', 'btn-ghost-sm', () => { updateStatus(id, 'noshow'); closeModal('detailModal'); });
+  }
+
+  const waBtn = document.createElement('a');
+  waBtn.className = 'btn btn-outline';
+  waBtn.style.color = '#128C7E';
+  waBtn.style.borderColor = '#128C7E';
+  waBtn.textContent = 'WhatsApp';
+  waBtn.href = `https://wa.me/${b.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`Hi ${b.name.split(' ')[0]}, just confirming your booking at The Style Bay: ${b.service} on ${prettyDate(b.date)} at ${b.time}. See you then! 👑`)}`;
+  waBtn.target = '_blank';
+  waBtn.rel = 'noopener';
+  actions.appendChild(waBtn);
+
+  openModal('detailModal');
+}
+
+function updateStatus(id, status) {
+  const b = bookings.find(x => x.id === id);
+  if (b) {
+    b.status = status;
+    renderTodaySlots();
+    if (document.getElementById('panel-bookings').classList.contains('active')) renderBookingsTable();
+    showToast(`${b.name} marked as ${statusLabel(status).toLowerCase()}.`);
+    document.getElementById('newBadge').textContent = bookings.filter(b => b.status === 'new').length;
+  }
+}
+
+// ===== SERVICES =====
+function renderServices() {
+  const max = Math.max(...SERVICES.map(s => s.count));
+  const container = document.getElementById('serviceBreakdown');
+  container.innerHTML = SERVICES.map(s => `
+    <div class="svc-row">
+      <div class="svc-name">${s.name}</div>
+      <div class="svc-bar-wrap"><div class="svc-bar" style="width:${(s.count/max*100)}%"></div></div>
+      <div class="svc-count">${s.count}</div>
+      <div class="svc-revenue">R ${s.revenue.toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+// ===== NEW BOOKING =====
+function openNewBookingModal(time) {
+  const d = new Date(); d.setDate(d.getDate());
+  document.getElementById('mnb-date').value = todayStr;
+  document.getElementById('mnb-date').min = todayStr;
+  if (time) document.getElementById('mnb-time').value = time;
+  openModal('newModal');
+}
+
+function openNewBookingModalAt(time) { openNewBookingModal(time); }
+
+function saveModalBooking() {
+  const name = document.getElementById('mnb-name').value.trim();
+  const phone = document.getElementById('mnb-phone').value.trim();
+  const service = document.getElementById('mnb-service').value;
+  const status = document.getElementById('mnb-status').value;
+  const date = document.getElementById('mnb-date').value;
+  const time = document.getElementById('mnb-time').value;
+  const notes = document.getElementById('mnb-notes').value.trim();
+
+  if (!name || !phone || !service || !date) {
+    showToast('Please fill in all required fields.'); return;
+  }
+
+  bookings.push({ id: nextId++, name, phone, service, status, date, time, notes });
+  closeModal('newModal');
+  renderTodaySlots();
+  showToast(`Booking added for ${name}.`);
+  document.getElementById('mnb-name').value = '';
+  document.getElementById('mnb-phone').value = '';
+  document.getElementById('mnb-service').value = '';
+  document.getElementById('mnb-notes').value = '';
+}
+
+function saveNewBooking() {
+  const name = document.getElementById('nb-name').value.trim();
+  const phone = document.getElementById('nb-phone').value.trim();
+  const service = document.getElementById('nb-service').value;
+  const status = document.getElementById('nb-status').value;
+  const date = document.getElementById('nb-date').value;
+  const time = document.getElementById('nb-time').value;
+  const notes = document.getElementById('nb-notes').value.trim();
+  if (!name || !phone || !service || !date) { showToast('Fill in all required fields.'); return; }
+  bookings.push({ id: nextId++, name, phone, service, status, date, time, notes });
+  showToast(`Booking for ${name} saved.`);
+  switchPanel('today');
+}
+
+// ===== CALENDAR =====
+let calOffset = 0;
+
+function renderCal() {
+  const d = new Date(today.getFullYear(), today.getMonth() + calOffset, 1);
+  document.getElementById('calMonthLabel').textContent = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  dows.forEach(dow => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = dow;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(d.getFullYear(), d.getMonth(), 1).getDay();
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  const prevDays = new Date(d.getFullYear(), d.getMonth(), 0).getDate();
+
+  // Prev month padding
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other-month';
+    el.textContent = prevDays - i;
+    grid.appendChild(el);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const el = document.createElement('div');
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow = new Date(dateStr + 'T00:00:00').getDay();
+    el.className = 'cal-day';
+    el.textContent = day;
+
+    if (dow === 0 || dow === 1) el.classList.add('closed'); // Sun/Mon
+    if (dateStr === todayStr) el.classList.add('today');
+    if (bookings.some(b => b.date === dateStr)) el.classList.add('has-booking');
+
+    el.addEventListener('click', () => {
+      document.getElementById('filterDate').value = dateStr;
+      switchPanel('bookings');
+      renderBookingsTable();
+    });
+
+    grid.appendChild(el);
+  }
+}
+
+function shiftCal(dir) { calOffset += dir; renderCal(); }
+
+// ===== MODAL HELPERS =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-backdrop').forEach(el => {
+  el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('mainToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== INIT =====
+renderTodaySlots();
+renderCal();
+
+// Set today as min for new booking date fields
+document.getElementById('nb-date').min = todayStr;
+document.getElementById('nb-date').value = todayStr;
+document.getElementById('mnb-date').value = todayStr;
+</script>
+</body>
+</html>

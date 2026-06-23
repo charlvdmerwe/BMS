@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Style Bay — Unisex Hair Salon, Belair</title>
+<meta name="description" content="The Style Bay Unisex Hair Salon, Old Oak Centre, Belair, Cape Town. Cuts, braids, weaves, colour and grooming. Come as a stranger, leave as family. Book your chair online.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%91%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1722;
+    --bay:#152537;
+    --bay-light:#23405C;
+    --gold:#CFA052;
+    --gold-soft:#E8C988;
+    --clay:#B5562F;
+    --sand:#F1E8D8;
+    --sand-deep:#E3D4B7;
+    --ink-warm:#241B12;
+    --cream:#FAF6EC;
+    --line-dark: rgba(232,201,136,0.22);
+    --line-light: rgba(36,27,18,0.14);
+    --radius: 2px;
+    --maxw: 1180px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+
+  body{
+    margin:0;
+    background:var(--sand);
+    color:var(--ink-warm);
+    font-family:'Work Sans', sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+
+  a{color:inherit;}
+
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:0.72rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    display:inline-flex;
+    align-items:center;
+    gap:0.6em;
+  }
+  .eyebrow::before{
+    content:"";
+    width:18px;height:1px;
+    background:currentColor;
+    opacity:0.6;
+  }
+
+  .wrap{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:0 28px;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:fixed; top:0; left:0; right:0;
+    z-index:50;
+    padding:18px 0;
+    transition:background 0.4s ease, padding 0.4s ease, box-shadow 0.4s ease;
+  }
+  header.scrolled{
+    background:rgba(14,23,34,0.92);
+    backdrop-filter:blur(6px);
+    padding:12px 0;
+    box-shadow:0 1px 0 var(--line-dark);
+  }
+  .header-row{
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    color:var(--cream);
+    text-decoration:none;
+  }
+  .brand svg{width:0px;height:0px;flex-shrink:0;}
+  .brand-name{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.18rem;
+    letter-spacing:0.01em;
+    white-space:nowrap;
+  }
+  nav.main-nav{
+    display:flex; align-items:center; gap:34px;
+  }
+  nav.main-nav a{
+    color:var(--cream);
+    text-decoration:none;
+    font-size:0.92rem;
+    letter-spacing:0.02em;
+    opacity:0.85;
+    position:relative;
+    padding-bottom:4px;
+  }
+  nav.main-nav a:hover{opacity:1;}
+  nav.main-nav a.cta{
+    border:1px solid var(--gold);
+    color:var(--gold-soft);
+    padding:8px 18px;
+    border-radius:var(--radius);
+    opacity:1;
+  }
+  nav.main-nav a.cta:hover{
+    background:var(--gold);
+    color:var(--ink);
+  }
+  .nav-toggle{display:none;}
+  .menu-btn{
+    display:none;
+    background:none; border:1px solid var(--line-dark);
+    color:var(--cream); padding:8px 12px; border-radius:var(--radius);
+    font-family:'Space Mono', monospace; font-size:0.8rem;
+    cursor:pointer;
+  }
+
+  @media (max-width:820px){
+    nav.main-nav{
+      position:absolute; top:100%; left:0; right:0;
+      background:var(--ink);
+      flex-direction:column;
+      align-items:flex-start;
+      padding:18px 28px 26px;
+      gap:18px;
+      display:none;
+      border-bottom:1px solid var(--line-dark);
+    }
+    .nav-toggle:checked ~ nav.main-nav{display:flex;}
+    .menu-btn{display:inline-block;}
+    nav.main-nav a.cta{margin-top:6px;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    background:
+      radial-gradient(ellipse at 75% 0%, rgba(207,160,82,0.16), transparent 55%),
+      linear-gradient(165deg, var(--ink) 0%, var(--bay) 58%, var(--bay-light) 100%);
+    color:var(--cream);
+    padding:170px 0 0;
+    overflow:hidden;
+  }
+  .hero-inner{
+    position:relative;
+    padding-bottom:150px;
+  }
+  .hero .eyebrow{color:var(--gold-soft);}
+  .hero h1{
+    font-size:clamp(2.6rem, 6vw, 4.6rem);
+    font-weight:600;
+    line-height:1.04;
+    margin:22px 0 26px;
+    max-width:14ch;
+  }
+  .hero h1 em{
+    font-style:italic;
+    color:var(--gold-soft);
+    font-weight:500;
+  }
+  .hero p.lede{
+    font-size:1.12rem;
+    max-width:46ch;
+    color:rgba(250,246,236,0.82);
+    margin-bottom:38px;
+  }
+  .hero-actions{
+    display:flex; gap:16px; flex-wrap:wrap;
+    margin-bottom:54px;
+  }
+  .btn{
+    font-family:'Work Sans', sans-serif;
+    font-weight:600;
+    font-size:0.95rem;
+    padding:14px 28px;
+    border-radius:var(--radius);
+    text-decoration:none;
+    display:inline-flex; align-items:center; gap:10px;
+    border:1px solid transparent;
+    cursor:pointer;
+    transition:transform 0.15s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-gold{background:var(--gold); color:var(--ink);}
+  .btn-gold:hover{background:var(--gold-soft);}
+  .btn-ghost{border-color:rgba(250,246,236,0.4); color:var(--cream);}
+  .btn-ghost:hover{border-color:var(--gold-soft); color:var(--gold-soft);}
+  .btn-clay{background:var(--clay); color:var(--cream);}
+  .btn-clay:hover{background:#9c4926;}
+
+  .hero-meta{
+    display:flex; gap:38px; flex-wrap:wrap;
+    font-family:'Space Mono', monospace;
+    font-size:0.8rem;
+    color:rgba(250,246,236,0.65);
+    border-top:1px solid var(--line-dark);
+    padding-top:22px;
+  }
+  .hero-meta strong{color:var(--cream); font-weight:400;}
+
+  .wave{
+    position:absolute; left:0; right:0; bottom:-1px;
+    width:100%; display:block; line-height:0;
+  }
+  .wave svg{width:100%; height:90px; display:block;}
+
+  /* ---------- SECTION GENERIC ---------- */
+  section{padding:108px 0;}
+  .section-dark{background:var(--ink); color:var(--cream);}
+  .section-bay{background:var(--bay); color:var(--cream);}
+  .section-head{
+    max-width:640px;
+    margin-bottom:56px;
+  }
+  .section-head .eyebrow{margin-bottom:18px; color:var(--clay);}
+  .section-dark .section-head .eyebrow, .section-bay .section-head .eyebrow{color:var(--gold-soft);}
+  .section-head h2{font-size:clamp(1.9rem,3.6vw,2.7rem); line-height:1.12;}
+
+  /* ---------- ABOUT ---------- */
+  .about-grid{
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:60px;
+    align-items:start;
+  }
+  .about-grid p{font-size:1.04rem; color:#473521; max-width:50ch;}
+  .stat-cards{
+    display:grid; gap:1px;
+    background:var(--line-light);
+    border:1px solid var(--line-light);
+  }
+  .stat-card{
+    background:var(--sand);
+    padding:22px 24px;
+    display:flex; justify-content:space-between; gap:18px;
+  }
+  .stat-card .label{
+    font-family:'Space Mono', monospace;
+    font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+    color:#7A6644; padding-top:3px;
+  }
+  .stat-card .value{
+    font-family:'Fraunces', serif; font-size:1.05rem; font-weight:500;
+    text-align:right;
+  }
+  .stat-card .value small{
+    display:block; font-family:'Work Sans'; font-weight:400;
+    font-size:0.82rem; color:#7A6644; margin-top:2px;
+  }
+
+  @media (max-width:880px){
+    .about-grid{grid-template-columns:1fr;}
+  }
+
+  /* ---------- SERVICES ---------- */
+  .service-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line-dark);
+    border:1px solid var(--line-dark);
+  }
+  .service-card{
+    background:var(--ink);
+    padding:34px 28px;
+    display:flex; flex-direction:column; gap:14px;
+    min-height:200px;
+  }
+  .service-card .num{
+    font-family:'Space Mono', monospace;
+    font-size:0.72rem; color:var(--clay);
+    letter-spacing:0.1em;
+  }
+  .service-card h3{
+    font-size:1.28rem; font-weight:500; color:var(--cream);
+  }
+  .service-card p{
+    font-size:0.92rem; color:rgba(250,246,236,0.66);
+    margin:0; flex-grow:1;
+  }
+  .service-card .price{
+    font-family:'Space Mono', monospace;
+    font-size:0.85rem; color:var(--gold-soft);
+    border-top:1px solid var(--line-dark);
+    padding-top:14px;
+  }
+  @media (max-width:880px){
+    .service-grid{grid-template-columns:1fr;}
+  }
+  .services-note{
+    margin-top:24px;
+    font-size:0.82rem;
+    color:rgba(250,246,236,0.5);
+    font-family:'Space Mono', monospace;
+  }
+
+  /* ---------- BOOKING ---------- */
+  .booking-shell{
+    position:relative;
+    background:var(--sand-deep);
+    border:1px solid var(--line-light);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .booking-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .booking-info{
+    background:var(--ink);
+    color:var(--cream);
+    padding:48px 42px;
+    position:relative;
+  }
+  .booking-info .tide-bg{
+    position:absolute; inset:0; opacity:0.18; pointer-events:none;
+  }
+  .booking-info h3{font-size:1.7rem; margin-bottom:18px; position:relative;}
+  .booking-info p{color:rgba(250,246,236,0.75); position:relative; max-width:34ch;}
+  .booking-info ul{
+    list-style:none; padding:0; margin:30px 0 0;
+    font-family:'Space Mono', monospace; font-size:0.82rem;
+    color:rgba(250,246,236,0.85);
+    display:flex; flex-direction:column; gap:12px;
+    position:relative;
+  }
+  .booking-info li{display:flex; gap:10px; align-items:baseline;}
+  .booking-info li::before{content:"·"; color:var(--gold-soft);}
+
+  .booking-form{
+    padding:48px 42px;
+    background:var(--sand);
+  }
+  .field{margin-bottom:20px;}
+  .field label{
+    display:block; font-size:0.78rem; letter-spacing:0.06em;
+    text-transform:uppercase; font-family:'Space Mono', monospace;
+    color:#5F4E32; margin-bottom:8px;
+  }
+  .field input, .field select, .field textarea{
+    width:100%;
+    font-family:'Work Sans', sans-serif;
+    font-size:0.96rem;
+    padding:12px 14px;
+    border:1px solid var(--line-light);
+    background:var(--cream);
+    color:var(--ink-warm);
+    border-radius:var(--radius);
+  }
+  .field textarea{resize:vertical; min-height:70px;}
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:2px solid var(--clay); outline-offset:1px;
+  }
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+
+  .slot-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+  }
+  .slot{
+    font-family:'Space Mono', monospace;
+    font-size:0.82rem;
+    padding:10px 6px;
+    text-align:center;
+    background:var(--cream);
+    border:1px solid var(--line-light);
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .slot:hover{border-color:var(--clay);}
+  .slot.selected{
+    background:var(--clay); color:var(--cream); border-color:var(--clay);
+  }
+  .slot:focus-visible{outline:2px solid var(--clay); outline-offset:2px;}
+
+  .form-actions{margin-top:28px;}
+  .form-note{
+    font-size:0.78rem; color:#7A6644; margin-top:14px;
+  }
+
+  .confirm-panel{
+    display:none;
+    margin-top:26px;
+    padding:22px;
+    border:1px dashed var(--clay);
+    border-radius:var(--radius);
+    background:var(--cream);
+  }
+  .confirm-panel.show{display:block;}
+  .confirm-panel h4{
+    font-family:'Fraunces', serif; font-size:1.1rem; margin-bottom:10px;
+  }
+  .confirm-panel .summary{
+    font-family:'Space Mono', monospace; font-size:0.82rem;
+    color:#473521; white-space:pre-line; margin-bottom:18px;
+    line-height:1.7;
+  }
+  .confirm-actions{display:flex; gap:10px; flex-wrap:wrap;}
+  .confirm-actions .btn{padding:10px 18px; font-size:0.85rem;}
+  .toast{
+    font-family:'Space Mono', monospace;
+    font-size:0.76rem;
+    color:var(--clay);
+    margin-top:10px;
+    opacity:0;
+    transition:opacity 0.3s ease;
+  }
+  .toast.show{opacity:1;}
+
+  @media (max-width:880px){
+    .booking-grid{grid-template-columns:1fr;}
+    .booking-info, .booking-form{padding:36px 26px;}
+    .two-col{grid-template-columns:1fr;}
+    .slot-grid{grid-template-columns:repeat(2,1fr);}
+  }
+
+  /* ---------- VISIT / LOCATION ---------- */
+  .visit-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--line-dark);
+    border:1px solid var(--line-dark);
+  }
+  .visit-card{
+    background:var(--ink);
+    padding:40px;
+    color:var(--cream);
+  }
+  .visit-card .eyebrow{color:var(--gold-soft); margin-bottom:18px;}
+  .visit-card h3{font-size:1.5rem; margin-bottom:16px;}
+  .visit-card a.line, .visit-card .line{
+    display:block; text-decoration:none; color:var(--cream);
+    font-size:0.98rem; margin-bottom:10px;
+  }
+  .visit-card a.line:hover{color:var(--gold-soft);}
+  .map-card iframe{width:100%; height:100%; min-height:380px; border:0; display:block; filter:grayscale(0.15) contrast(1.05);}
+  @media (max-width:880px){
+    .visit-grid{grid-template-columns:1fr;}
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    background:var(--ink);
+    color:rgba(250,246,236,0.55);
+    padding:44px 0 32px;
+    border-top:1px solid var(--line-dark);
+  }
+  .footer-row{
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:18px;
+    font-size:0.85rem;
+  }
+  .footer-row .brand-name{color:var(--cream); font-size:1rem;}
+  footer a{color:rgba(250,246,236,0.55); text-decoration:none;}
+  footer a:hover{color:var(--gold-soft);}
+  .footer-links{display:flex; gap:22px;}
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0);
+  }
+</style>
+</head>
+<body>
+
+<header id="siteHeader">
+  <div class="wrap header-row">
+    <a href="#home" class="brand">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M3 22c2.5-3 4.5-3 7 0s4.5 3 7 0 4.5-3 7 0 4.5 3 5 0" stroke="#CFA052" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M5 18 9 7l4 8 3-9 3 9 4-8 4 11" stroke="#E8C988" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span class="brand-name">The&nbsp;Style&nbsp;Bay</span>
+    </a>
+    <input type="checkbox" id="navToggle" class="nav-toggle">
+    <label for="navToggle" class="menu-btn">MENU</label>
+    <nav class="main-nav">
+      <a href="#about">Our Bay</a>
+      <a href="#services">Services</a>
+      <a href="#booking">Book</a>
+      <a href="#visit">Visit</a>
+      <a href="#booking" class="cta">Book your chair</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" id="home">
+  <div class="wrap hero-inner">
+    <span class="eyebrow">Unisex hair salon · Old Oak Centre, Belair</span>
+    <h1>Come as a stranger,<br>leave as <em>family.</em></h1>
+    <p class="lede">Cuts, braids, weaves and colour for every crown in the family — men, women and kids. Take a walk with us, sit in the chair, and let us take care of the rest.</p>
+    <div class="hero-actions">
+      <a href="#booking" class="btn btn-gold">Book your chair →</a>
+      <a href="tel:+27219100519" class="btn btn-ghost">Call 021 910 0519</a>
+    </div>
+    <div class="hero-meta">
+      <div><strong>Address</strong><br>39 Meerlust St, Old Oak Centre, Belair, Cape Town</div>
+      <div><strong>Hours</strong><br>Tue – Sat · 09:00 – 18:00</div>
+      <div><strong>Specialty</strong><br>Hair extensions &amp; weaves</div>
+    </div>
+  </div>
+  <div class="wave" aria-hidden="true">
+    <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
+      <path d="M0,55 C150,20 300,80 450,50 C600,20 750,80 900,50 C1050,20 1150,55 1200,45 L1200,90 L0,90 Z" fill="#F1E8D8"/>
+    </svg>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap about-grid">
+    <div>
+      <div class="section-head">
+        <span class="eyebrow">Our Bay</span>
+        <h2>A chair for everyone, a story for every crown</h2>
+      </div>
+      <p>The Style Bay sits in the Old Oak Centre in Belair — a small, easy-to-find salon with a big family feel. We work on every hair type and every age, from a quick kid's trim to a full set of braids or extensions. No appointment ever feels rushed, and nobody leaves without a mirror check they're happy with.</p>
+      <p style="margin-top:16px;">Walk in, or book ahead online below — either way, you'll be looked after.</p>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="label">Address</div>
+        <div class="value">Old Oak Centre<small>39 Meerlust St, Belair, Cape Town</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Phone</div>
+        <div class="value"><a href="tel:+27219100519">021 910 0519</a><small>Call or WhatsApp</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Hours</div>
+        <div class="value">Tue – Sat<small>09:00 – 18:00, closed Sun &amp; Mon</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">For</div>
+        <div class="value">Men · Women · Kids<small>unisex, all hair types</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-dark" id="services">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">What We Do</span>
+      <h2>Every service, one chair</h2>
+    </div>
+    <div class="service-grid">
+      <div class="service-card">
+        <span class="num">01</span>
+        <h3>Cuts &amp; Trims</h3>
+        <p>Men's, women's and kids' cuts — sharp lines, soft fades or a simple tidy-up.</p>
+        <div class="price">from R120</div>
+      </div>
+      <div class="service-card">
+        <span class="num">02</span>
+        <h3>Braids &amp; Cornrows</h3>
+        <p>Classic cornrows, box braids and protective styles, sized to your hair and your day.</p>
+        <div class="price">from R250</div>
+      </div>
+      <div class="service-card">
+        <span class="num">03</span>
+        <h3>Weaves &amp; Extensions</h3>
+        <p>Our specialty. Sew-ins, closures and full installs, fitted and blended to last.</p>
+        <div class="price">from R450</div>
+      </div>
+      <div class="service-card">
+        <span class="num">04</span>
+        <h3>Colour &amp; Highlights</h3>
+        <p>Full colour, highlights and toning — done with a patch test and a plan first.</p>
+        <div class="price">from R350</div>
+      </div>
+      <div class="service-card">
+        <span class="num">05</span>
+        <h3>Wash, Treat &amp; Blow-dry</h3>
+        <p>Deep treatment, scalp care and a finish you can walk straight out the door with.</p>
+        <div class="price">from R150</div>
+      </div>
+      <div class="service-card">
+        <span class="num">06</span>
+        <h3>Beard Shape-up</h3>
+        <p>Lined, trimmed and tidied — usually booked together with a cut.</p>
+        <div class="price">from R80</div>
+      </div>
+    </div>
+    <div class="services-note">Prices are starting estimates — final price depends on hair length and style. Ask in salon for an exact quote.</div>
+  </div>
+</section>
+
+<section id="booking">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Reserve Your Chair</span>
+      <h2>Pick a service, a day, a time</h2>
+    </div>
+
+    <div class="booking-shell">
+      <div class="booking-grid">
+        <div class="booking-info">
+          <svg class="tide-bg" viewBox="0 0 400 400" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,80 C100,40 200,120 300,80 C350,60 380,90 400,80" stroke="#CFA052" stroke-width="2" fill="none"/>
+            <path d="M0,180 C100,140 200,220 300,180 C350,160 380,190 400,180" stroke="#CFA052" stroke-width="2" fill="none"/>
+            <path d="M0,280 C100,240 200,320 300,280 C350,260 380,290 400,280" stroke="#CFA052" stroke-width="2" fill="none"/>
+          </svg>
+          <h3>How booking works</h3>
+          <p>Fill in your details and pick a slot. We don't take payment online — your request is sent straight to the salon to confirm.</p>
+          <ul>
+            <li>Choose your service &amp; preferred time</li>
+            <li>Send the request via WhatsApp or copy it</li>
+            <li>We confirm by phone or WhatsApp</li>
+            <li>No-shows: please give us a call to cancel</li>
+          </ul>
+        </div>
+        <form class="booking-form" id="bookingForm">
+          <div class="field">
+            <label for="bf-name">Full name</label>
+            <input type="text" id="bf-name" name="name" required placeholder="e.g. Thandi Joubert">
+          </div>
+          <div class="two-col">
+            <div class="field">
+              <label for="bf-phone">Phone number</label>
+              <input type="tel" id="bf-phone" name="phone" required placeholder="082 000 0000">
+            </div>
+            <div class="field">
+              <label for="bf-service">Service</label>
+              <select id="bf-service" name="service" required>
+                <option value="" disabled selected>Choose a service</option>
+                <option>Cut &amp; Trim</option>
+                <option>Braids &amp; Cornrows</option>
+                <option>Weave / Extensions</option>
+                <option>Colour &amp; Highlights</option>
+                <option>Wash, Treat &amp; Blow-dry</option>
+                <option>Beard Shape-up</option>
+                <option>Not sure — advise me</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="bf-date">Preferred date</label>
+            <input type="date" id="bf-date" name="date" required>
+          </div>
+          <div class="field">
+            <label>Preferred time</label>
+            <div class="slot-grid" id="slotGrid" role="group" aria-label="Preferred time">
+              <!-- slots injected by JS -->
+            </div>
+          </div>
+          <div class="field">
+            <label for="bf-notes">Anything we should know? (optional)</label>
+            <textarea id="bf-notes" name="notes" placeholder="Hair length, reference photo, stylist preference…"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-clay">Request this booking</button>
+            <div class="form-note">This is a request, not a confirmed appointment. We'll confirm directly with you.</div>
+          </div>
+
+          <div class="confirm-panel" id="confirmPanel">
+            <h4>Almost there — send your request</h4>
+            <div class="summary" id="confirmSummary"></div>
+            <div class="confirm-actions">
+              <a href="#" id="waLink" class="btn btn-gold" target="_blank" rel="noopener">Send via WhatsApp</a>
+              <button type="button" class="btn btn-ghost" id="copyBtn" style="border-color:var(--line-light); color:var(--ink-warm);">Copy details</button>
+              <a href="tel:+27219100519" class="btn btn-ghost" style="border-color:var(--line-light); color:var(--ink-warm);">Call instead</a>
+            </div>
+            <div class="toast" id="copyToast">Copied to clipboard.</div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-bay" id="visit">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Find Us</span>
+      <h2>Old Oak Centre, Belair</h2>
+    </div>
+    <div class="visit-grid">
+      <div class="visit-card">
+        <span class="eyebrow">Details</span>
+        <h3>The Style Bay Unisex Hair Salon</h3>
+        <span class="line">39 Meerlust St, Old Oak Centre<br>Belair, Cape Town, South Africa</span>
+        <a class="line" href="tel:+27219100519">021 910 0519</a>
+        <a class="line" href="https://www.facebook.com/thestylebayunisexhairsalon/" target="_blank" rel="noopener">Facebook — @thestylebayunisexhairsalon</a>
+        <span class="line">Tue – Sat · 09:00 – 18:00 · Closed Sun &amp; Mon</span>
+      </div>
+      <div class="visit-card map-card" style="padding:0;">
+        <iframe
+          src="https://www.google.com/maps?q=Old+Oak+Centre,+39+Meerlust+St,+Belair,+Cape+Town&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Map to The Style Bay Unisex Hair Salon, Old Oak Centre, Belair, Cape Town"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <span class="brand-name" style="font-family:'Fraunces',serif;">The Style Bay</span>
+    <div class="footer-links">
+      <a href="#about">Our Bay</a>
+      <a href="#services">Services</a>
+      <a href="#booking">Book</a>
+      <a href="https://www.facebook.com/thestylebayunisexhairsalon/" target="_blank" rel="noopener">Facebook</a>
+    </div>
+    <span>© <span id="year"></span> The Style Bay Unisex Hair Salon</span>
+  </div>
+</footer>
+
+<script>
+  // header scroll state
+  const header = document.getElementById('siteHeader');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 12);
+  });
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // close mobile nav after clicking a link
+  document.querySelectorAll('nav.main-nav a').forEach(a => {
+    a.addEventListener('click', () => { document.getElementById('navToggle').checked = false; });
+  });
+
+  // date min = today
+  const dateInput = document.getElementById('bf-date');
+  const today = new Date();
+  dateInput.min = today.toISOString().split('T')[0];
+
+  // time slots
+  const slotGrid = document.getElementById('slotGrid');
+  const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+  let selectedSlot = null;
+  slots.forEach(time => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'slot';
+    btn.textContent = time;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedSlot = time;
+    });
+    slotGrid.appendChild(btn);
+  });
+
+  // booking form submit -> build summary + whatsapp link
+  const form = document.getElementById('bookingForm');
+  const confirmPanel = document.getElementById('confirmPanel');
+  const confirmSummary = document.getElementById('confirmSummary');
+  const waLink = document.getElementById('waLink');
+  const SALON_WHATSAPP = '27219100519'; // update if the salon uses a different WhatsApp number
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    if (!selectedSlot) {
+      alert('Please choose a preferred time slot.');
+      return;
+    }
+
+    const data = {
+      name: document.getElementById('bf-name').value.trim(),
+      phone: document.getElementById('bf-phone').value.trim(),
+      service: document.getElementById('bf-service').value,
+      date: document.getElementById('bf-date').value,
+      notes: document.getElementById('bf-notes').value.trim(),
+    };
+
+    const prettyDate = data.date
+      ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })
+      : '';
+
+    const message =
+`Hi Style Bay, I'd like to book a chair:
+Name: ${data.name}
+Phone: ${data.phone}
+Service: ${data.service}
+Date: ${prettyDate}
+Time: ${selectedSlot}${data.notes ? `\nNotes: ${data.notes}` : ''}`;
+
+    confirmSummary.textContent = message;
+    waLink.href = `https://wa.me/${SALON_WHATSAPP}?text=${encodeURIComponent(message)}`;
+    confirmPanel.classList.add('show');
+    confirmPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    confirmPanel.dataset.message = message;
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    const message = confirmPanel.dataset.message || confirmSummary.textContent;
+    const toast = document.getElementById('copyToast');
+    try {
+      await navigator.clipboard.writeText(message);
+      toast.textContent = 'Copied to clipboard.';
+    } catch (err) {
+      toast.textContent = 'Could not copy automatically — select the text above and copy manually.';
+    }
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+</script>
+
+</body>
+</html>
