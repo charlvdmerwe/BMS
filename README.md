@@ -1,6 +1,16 @@
-# BMS — Business Management & Booking System
+# BMS — Booking Management System
 
-BMS is a lightweight, configurable **PHP/MySQL business booking system** designed for small service-based businesses.
+BMS is a lightweight, configurable and modular **PHP/MySQL business booking system** designed for small service-based businesses.
+
+## Background
+
+My main reason for developing this system was due to (if you look at earlier commits lol), that this system was originally made for a local salon business...
+
+but then I realized...
+
+I don't have to re-invent the wheel every time I find a new client, but rather make this into a modular system, and just build up from this as the core/foundational system.
+
+I made this repo public, because I am a believer in open-source software and placing the power in others hands to also use this to go out and automate their local economy, so feel free to use this.
 
 It provides two main interfaces:
 
@@ -143,6 +153,8 @@ Responsibilities include:
 # Architecture
 
 ![BMS Architecture](docMedia/BMSarchitecture.png)
+
+//NOTE that a tblAdmin can also be added to the database to integrate admin login to the dashboard. I did not add this, due to certain businesses might have different security policies and needs 
 
 ---
 
