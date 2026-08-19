@@ -240,6 +240,7 @@ if (!$mysqli->connect_error) {
 <title><?php echo htmlspecialchars($businessName); ?> — Booking Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<<<<<<< HEAD
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1065,6 +1066,10 @@ if (!$mysqli->connect_error) {
     .stat-strip { grid-template-columns: 1fr 1fr; }
   }
 </style>
+=======
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/dashboard.css">
+>>>>>>> aa2d9837fdf52a3f07832dada29dee96536fc63b
 </head>
 <body>
 
@@ -1084,11 +1089,6 @@ if (!$mysqli->connect_error) {
       All Bookings
       <span class="nav-badge" id="newBadge">0</span>
     </div>
-    <div class="nav-item" data-panel="new">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Add Booking
-    </div>
-
     <div class="nav-section-label" style="margin-top:8px;">Insights</div>
     <div class="nav-item" data-panel="services">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 13V9M6 13V6M10 13V4M14 13V2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -1411,6 +1411,15 @@ function prettyDate(d) {
   return dt.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short' });
 }
 
+function formatTime(t) {
+  if (!t) return '';
+  const h = parseInt(t.split(':')[0], 10);
+  if (h === 0) return '12am';
+  if (h < 12) return h + 'am';
+  if (h === 12) return '12pm';
+  return (h - 12) + 'pm';
+}
+
 // ===== NAV =====
 const panels = ['bookings','new','services','settings'];
 const panelTitles = {
@@ -1479,18 +1488,27 @@ function renderBookingsTable() {
 
   filtered.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
 
+  const now = Date.now();
+  let nearestId = null;
+  let minDiff = Infinity;
+  filtered.forEach(b => {
+    if (!b.date || !b.time) return;
+    const diff = Math.abs(new Date(b.date + 'T' + b.time.slice(0,5)).getTime() - now);
+    if (diff < minDiff) { minDiff = diff; nearestId = b.bookingId; }
+  });
+
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No bookings match this filter.</div></td></tr>';
   } else {
     tbody.innerHTML = filtered.map(b => `
-      <tr>
+      <tr${b.bookingId === nearestId ? ' class="booking-nearest"' : ''}>
         <td>
           <div class="client-name">${b.name}</div>
           <div class="client-phone">${b.phone}</div>
         </td>
         <td><span class="service-tag">${b.service}</span></td>
         <td>R ${Number(b.price || PRICES[b.service] || 0).toLocaleString('en-ZA')}</td>
-        <td><div class="time-badge">${prettyDate(b.date)}<br><span style="color:var(--gold);">${b.time}</span></div></td>
+        <td><div class="time-badge">${prettyDate(b.date)}<br><span style="color:var(--ink);">${formatTime(b.time)}</span></div></td>
         <td><span class="status-badge status-${b.status}">${statusLabel(b.status)}</span></td>
         <td style="font-size:0.82rem; color:var(--muted); max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${b.notes || '—'}</td>
         <td>
@@ -1545,7 +1563,7 @@ function openDetailModal(id) {
   if (!b) return;
 
   document.getElementById('dm-name').textContent = b.name;
-  document.getElementById('dm-sub').textContent = `${b.service} · ${prettyDate(b.date)} · ${b.time}`;
+  document.getElementById('dm-sub').textContent = `${b.service} · ${prettyDate(b.date)} · ${formatTime(b.time)}`;
 
   const grid = document.getElementById('dm-grid');
   grid.innerHTML = [
@@ -1553,7 +1571,7 @@ function openDetailModal(id) {
     ['Service', b.service],
     ['Price', `R ${Number(b.price || PRICES[b.service] || 0).toLocaleString('en-ZA')}`],
     ['Date', prettyDate(b.date)],
-    ['Time', b.time],
+    ['Time', formatTime(b.time)],
     ['Status', `<span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>`],
   ].map(([label, val]) => `
     <div class="detail-item">
