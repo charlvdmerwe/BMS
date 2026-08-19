@@ -67,7 +67,6 @@ The dashboard provides a centralized interface for managing the business's appoi
 |---|---|
 | PHP | Server-side application logic |
 | MySQL / MariaDB | Database |
-| MySQLi | PHP database connectivity |
 | HTML5 | Application structure |
 | CSS3 | Responsive UI and styling |
 | JavaScript | AJAX, dynamic UI and dashboard functionality |
