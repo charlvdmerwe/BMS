@@ -1,5 +1,9 @@
 <?php
-require __DIR__ . '/config.php';
+$dbHost = 'localhost';
+$dbUser = 'root';
+$dbPass = '';
+$dbName = 'dbTheStyleBay';
+$dbTable = 'tblbookings';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json; charset=utf-8');
@@ -26,8 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $last = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
 
     // map service to price server-side (fallback 0)
-    if (empty($price) && !empty($_POST['service']) && isset($services[$_POST['service']])) {
-      $price = $services[$_POST['service']];
+    $prices = [
+      'Cut & Trim' => 160,
+      'Braids & Cornrows' => 300,
+      'Weave / Extensions' => 550,
+      'Colour & Highlights' => 400,
+      'Wash, Treat & Blow-dry' => 180,
+      'Beard Shape-up' => 90,
+    ];
+    if (empty($price) && !empty($_POST['service']) && isset($prices[$_POST['service']])) {
+      $price = $prices[$_POST['service']];
     }
 
     $service = $_POST['service'] ?? '';
@@ -176,18 +188,20 @@ if (isset($_GET['action']) && $_GET['action'] === 'getSlots') {
   while ($row = $result->fetch_assoc()) {
     $bookedSlots[] = substr($row['Time'], 0, 5);
   }
-
+  
   $stmt->close();
   $mysqli->close();
-
-  $isFullyBooked = count($bookedSlots) === count($timeSlots);
-
+  
+  // All available time slots
+  $allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+  $isFullyBooked = count($bookedSlots) === count($allSlots);
+  
   echo json_encode([
     'success' => true,
     'date' => $date,
     'bookedSlots' => $bookedSlots,
     'isFullyBooked' => $isFullyBooked,
-    'availableSlots' => array_values(array_diff($timeSlots, $bookedSlots))
+    'availableSlots' => array_values(array_diff($allSlots, $bookedSlots))
   ]);
   exit;
 }
@@ -237,40 +251,39 @@ if (!$mysqli->connect_error) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo htmlspecialchars($businessName); ?> — Booking Dashboard</title>
+<title>The Style Bay — Booking Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<<<<<<< HEAD
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #0F172A;
-    --bay: #1E293B;
-    --bay-light: #334155;
-    --gold: #2563EB;
-    --gold-soft: #93C5FD;
-    --clay: #334155;
-    --clay-dark: #1E293B;
-    --sand: #F8FAFC;
-    --sand-deep: #E2E8F0;
-    --cream: #FFFFFF;
-    --ink-warm: #1E293B;
-    --muted: #64748B;
-    --line-dark: rgba(255,255,255,0.14);
-    --line-light: rgba(15,23,42,0.10);
-    --green: #16A34A;
-    --green-bg: #ECFDF5;
-    --red-bg: #FEF2F2;
-    --amber-bg: #FFFBEB;
+    --ink: #0E1722;
+    --bay: #152537;
+    --bay-light: #23405C;
+    --gold: #CFA052;
+    --gold-soft: #E8C988;
+    --clay: #B5562F;
+    --clay-dark: #8f4224;
+    --sand: #F1E8D8;
+    --sand-deep: #E3D4B7;
+    --cream: #FAF6EC;
+    --ink-warm: #241B12;
+    --muted: #7A6644;
+    --line-dark: rgba(232,201,136,0.18);
+    --line-light: rgba(36,27,18,0.14);
+    --green: #3a7d5a;
+    --green-bg: #eaf5ef;
+    --red-bg: #fdf0ed;
+    --amber-bg: #fdf6e3;
     --sidebar-w: 220px;
-    --radius: 6px;
+    --radius: 3px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Inter', sans-serif;
-    background: #F1F5F9;
+    font-family: 'Work Sans', sans-serif;
+    background: #f5f0e8;
     color: var(--ink-warm);
     font-size: 15px;
     line-height: 1.5;
@@ -302,8 +315,8 @@ if (!$mysqli->connect_error) {
 
   .sidebar-brand svg { width: 0px; height: 0px; flex-shrink: 0; }
 
-  .brand-text { font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; color: var(--cream); line-height: 1.2; }
-  .brand-sub { font-family: 'Inter', sans-serif; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(250,246,236,0.4); display: block; margin-top: 2px; }
+  .brand-text { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--cream); line-height: 1.2; }
+  .brand-sub { font-family: 'Space Mono', monospace; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(250,246,236,0.4); display: block; margin-top: 2px; }
 
   nav.sidebar-nav {
     padding: 18px 0;
@@ -311,7 +324,7 @@ if (!$mysqli->connect_error) {
   }
 
   .nav-section-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.58rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -343,7 +356,7 @@ if (!$mysqli->connect_error) {
     margin-left: auto;
     background: var(--clay);
     color: var(--cream);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.6rem;
     padding: 2px 6px;
     border-radius: 20px;
@@ -354,7 +367,7 @@ if (!$mysqli->connect_error) {
     border-top: 1px solid var(--line-dark);
     font-size: 0.78rem;
     color: rgba(250,246,236,0.35);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
   }
 
   .status-dot {
@@ -389,14 +402,14 @@ if (!$mysqli->connect_error) {
   }
 
   .topbar-left h1 {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 1.22rem;
     font-weight: 600;
     color: var(--ink);
   }
 
   .topbar-left .topbar-sub {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.66rem;
     color: var(--muted);
     letter-spacing: 0.1em;
@@ -410,14 +423,14 @@ if (!$mysqli->connect_error) {
   }
 
   .topbar-date {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.72rem;
     color: var(--muted);
     letter-spacing: 0.06em;
   }
 
   .btn {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-weight: 600;
     font-size: 0.82rem;
     padding: 9px 16px;
@@ -479,7 +492,7 @@ if (!$mysqli->connect_error) {
   }
 
   .stat-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -488,7 +501,7 @@ if (!$mysqli->connect_error) {
   }
 
   .stat-value {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 1.9rem;
     font-weight: 600;
     color: var(--ink);
@@ -536,14 +549,14 @@ if (!$mysqli->connect_error) {
   }
 
   .card-title {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 1rem;
     font-weight: 600;
     color: var(--ink);
   }
 
   .card-sub {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -558,7 +571,7 @@ if (!$mysqli->connect_error) {
   }
 
   .booking-table th {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.6rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
@@ -581,11 +594,11 @@ if (!$mysqli->connect_error) {
   .booking-table tbody tr:hover { background: #faf7f0; }
 
   .client-name { font-weight: 600; color: var(--ink); }
-  .client-phone { font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .client-phone { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
 
   .service-tag {
     display: inline-block;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.65rem;
     letter-spacing: 0.06em;
     padding: 3px 8px;
@@ -595,7 +608,7 @@ if (!$mysqli->connect_error) {
   }
 
   .time-badge {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.78rem;
     color: var(--ink-warm);
     white-space: nowrap;
@@ -605,7 +618,7 @@ if (!$mysqli->connect_error) {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -656,7 +669,7 @@ if (!$mysqli->connect_error) {
   .quick-slot:hover { background: #f7f2e8; }
 
   .qs-time {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.72rem;
     color: var(--muted);
     width: 42px;
@@ -695,7 +708,7 @@ if (!$mysqli->connect_error) {
   }
 
   .cal-month {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 0.96rem;
     font-weight: 600;
     color: var(--ink);
@@ -727,7 +740,7 @@ if (!$mysqli->connect_error) {
   }
 
   .cal-dow {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.58rem;
     letter-spacing: 0.08em;
     color: var(--muted);
@@ -772,7 +785,7 @@ if (!$mysqli->connect_error) {
 
   .notes-item:last-child { border-bottom: none; }
   .notes-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -799,7 +812,7 @@ if (!$mysqli->connect_error) {
   }
 
   .svc-count {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.72rem;
     color: var(--muted);
     width: 30px;
@@ -822,7 +835,7 @@ if (!$mysqli->connect_error) {
   }
 
   .svc-revenue {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.72rem;
     color: var(--ink-warm);
     width: 54px;
@@ -862,8 +875,8 @@ if (!$mysqli->connect_error) {
     gap: 12px;
   }
 
-  .modal-head h3 { font-family: 'Inter', sans-serif; font-size: 1.1rem; }
-  .modal-head .modal-sub { font-family: 'Inter', sans-serif; font-size: 0.62rem; letter-spacing: 0.1em; color: rgba(250,246,236,0.5); text-transform: uppercase; margin-top: 3px; }
+  .modal-head h3 { font-family: 'Fraunces', serif; font-size: 1.1rem; }
+  .modal-head .modal-sub { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; color: rgba(250,246,236,0.5); text-transform: uppercase; margin-top: 3px; }
 
   .modal-close {
     background: none;
@@ -892,7 +905,7 @@ if (!$mysqli->connect_error) {
 
   .modal-field label {
     display: block;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -904,7 +917,7 @@ if (!$mysqli->connect_error) {
   .modal-field select,
   .modal-field textarea {
     width: 100%;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 0.9rem;
     padding: 10px 12px;
     border: 1px solid var(--line-light);
@@ -935,7 +948,7 @@ if (!$mysqli->connect_error) {
   }
 
   .detail-item .detail-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.6rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -983,7 +996,7 @@ if (!$mysqli->connect_error) {
     color: var(--cream);
     padding: 12px 18px;
     border-radius: var(--radius);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.76rem;
     box-shadow: 0 4px 16px rgba(14,23,34,0.25);
     border-left: 3px solid var(--gold);
@@ -1004,7 +1017,7 @@ if (!$mysqli->connect_error) {
   }
 
   .tab-btn {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.65rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1033,7 +1046,7 @@ if (!$mysqli->connect_error) {
 
   .filter-bar input[type="date"],
   .filter-bar select {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 0.82rem;
     padding: 7px 10px;
     border: 1px solid var(--line-light);
@@ -1043,7 +1056,7 @@ if (!$mysqli->connect_error) {
   }
 
   .filter-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Space Mono', monospace;
     font-size: 0.62rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1076,8 +1089,12 @@ if (!$mysqli->connect_error) {
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-brand">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M3 22c2.5-3 4.5-3 7 0s4.5 3 7 0 4.5-3 7 0 4.5 3 5 0" stroke="#CFA052" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M5 18 9 7l4 8 3-9 3 9 4-8 4 11" stroke="#E8C988" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
     <div>
-      <div class="brand-text"><?php echo htmlspecialchars($businessName); ?></div>
+      <div class="brand-text">The Style Bay</div>
       <span class="brand-sub">Dashboard</span>
     </div>
   </div>
@@ -1087,7 +1104,7 @@ if (!$mysqli->connect_error) {
     <div class="nav-item active" data-panel="bookings">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6h8M4 9h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       All Bookings
-      <span class="nav-badge" id="newBadge">0</span>
+      <span class="nav-badge" id="newBadge">2</span>
     </div>
     <div class="nav-section-label" style="margin-top:8px;">Insights</div>
     <div class="nav-item" data-panel="services">
@@ -1095,15 +1112,15 @@ if (!$mysqli->connect_error) {
       Services &amp; Revenue
     </div>
 
-    <div class="nav-section-label" style="margin-top:8px;">Settings</div>
+    <div class="nav-section-label" style="margin-top:8px;">Salon</div>
     <div class="nav-item" id="waLink" data-panel="settings">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Business Info
+      Salon Info
     </div>
   </nav>
 
   <div class="sidebar-footer">
-    <span class="status-dot"></span>Open <?php echo htmlspecialchars($businessOpenDays); ?>
+    <span class="status-dot"></span>Open today · Tue–Sat
   </div>
 </aside>
 
@@ -1113,7 +1130,7 @@ if (!$mysqli->connect_error) {
   <div class="topbar">
     <div class="topbar-left">
       <h1 id="topbarTitle">All Bookings</h1>
-      <div class="topbar-sub" id="topbarSub"><?php echo htmlspecialchars($businessAddress); ?></div>
+      <div class="topbar-sub" id="topbarSub">Old Oak Centre, Belair</div>
     </div>
     <div class="topbar-right">
       <div class="topbar-date" id="topbarDate"></div>
@@ -1158,9 +1175,12 @@ if (!$mysqli->connect_error) {
           <input type="date" id="filterDate">
           <select id="filterService">
             <option value="">All services</option>
-            <?php foreach ($services as $serviceName => $servicePrice): ?>
-            <option><?php echo htmlspecialchars($serviceName); ?></option>
-            <?php endforeach; ?>
+            <option>Cut &amp; Trim</option>
+            <option>Braids &amp; Cornrows</option>
+            <option>Weave / Extensions</option>
+            <option>Colour &amp; Highlights</option>
+            <option>Wash, Treat &amp; Blow-dry</option>
+            <option>Beard Shape-up</option>
           </select>
           <button class="btn btn-ghost-sm" onclick="clearFilters()">Clear</button>
         </div>
@@ -1196,7 +1216,7 @@ if (!$mysqli->connect_error) {
           <div class="modal-row">
             <div class="modal-field">
               <label>Client name</label>
-              <input type="text" id="nb-name" placeholder="e.g. Jane Smith">
+              <input type="text" id="nb-name" placeholder="e.g. Nomvula Dlamini">
             </div>
             <div class="modal-field">
               <label>Phone</label>
@@ -1208,9 +1228,12 @@ if (!$mysqli->connect_error) {
               <label>Service</label>
               <select id="nb-service">
                 <option value="" disabled selected>Choose</option>
-                <?php foreach ($services as $serviceName => $servicePrice): ?>
-                <option><?php echo htmlspecialchars($serviceName); ?></option>
-                <?php endforeach; ?>
+                <option>Cut &amp; Trim</option>
+                <option>Braids &amp; Cornrows</option>
+                <option>Weave / Extensions</option>
+                <option>Colour &amp; Highlights</option>
+                <option>Wash, Treat &amp; Blow-dry</option>
+                <option>Beard Shape-up</option>
               </select>
             </div>
           </div>
@@ -1222,16 +1245,16 @@ if (!$mysqli->connect_error) {
             <div class="modal-field">
               <label>Time</label>
               <select id="nb-time">
-                <?php foreach ($timeSlots as $slot): ?>
-                <option><?php echo htmlspecialchars($slot); ?></option>
-                <?php endforeach; ?>
+                <option>09:00</option><option>10:00</option><option>11:00</option>
+                <option>12:00</option><option>13:00</option><option>14:00</option>
+                <option>15:00</option><option>16:00</option><option>17:00</option>
               </select>
-              <div id="nb-booked-msg" style="display:none; margin-top:6px; font-family:'Inter',sans-serif; font-size:0.72rem; color:var(--clay);">This day is fully booked.</div>
+              <div id="nb-booked-msg" style="display:none; margin-top:6px; font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--clay);">This day is fully booked.</div>
             </div>
           </div>
           <div class="modal-field" style="margin-bottom:24px;">
             <label>Notes (optional)</label>
-            <textarea id="nb-notes" placeholder="Notes, preferences, special requests…"></textarea>
+            <textarea id="nb-notes" placeholder="Hair length, preferences, special requests…"></textarea>
           </div>
           <div style="display:flex; gap:10px;">
             <button class="btn btn-clay" onclick="saveNewBooking()">Save booking</button>
@@ -1246,7 +1269,7 @@ if (!$mysqli->connect_error) {
       <div class="stat-strip">
         <div class="stat-tile stat-tile--center">
           <div class="stat-label">Best seller</div>
-          <div class="stat-value" style="font-size:1.2rem; font-family:'Inter',sans-serif; font-weight:600; padding-top:4px;" id="servicesBestSeller">—</div>
+          <div class="stat-value" style="font-size:1.2rem; font-family:'Fraunces',serif; font-weight:600; padding-top:4px;" id="servicesBestSeller">—</div>
           <div class="stat-meta" id="servicesBestSellerMeta">No data yet</div>
         </div>
       </div>
@@ -1263,43 +1286,42 @@ if (!$mysqli->connect_error) {
     <div class="panel" id="panel-settings">
       <div class="card" style="max-width:540px;">
         <div class="card-header">
-          <div class="card-title">Business info</div>
+          <div class="card-title">Salon info</div>
         </div>
         <div style="padding:24px;">
           <div class="modal-row">
             <div class="modal-field">
-              <label>Business name</label>
-              <input type="text" value="<?php echo htmlspecialchars($businessName); ?>">
+              <label>Salon name</label>
+              <input type="text" value="The Style Bay Unisex Hair Salon">
             </div>
           </div>
           <div class="modal-row">
             <div class="modal-field">
               <label>Address</label>
-              <input type="text" value="<?php echo htmlspecialchars($businessAddress); ?>">
+              <input type="text" value="39 Meerlust St, Old Oak Centre, Belair, Cape Town">
             </div>
           </div>
           <div class="modal-row">
             <div class="modal-field">
               <label>Phone</label>
-              <input type="tel" value="<?php echo htmlspecialchars($businessPhone); ?>">
+              <input type="tel" value="021 910 0519">
             </div>
             <div class="modal-field">
               <label>WhatsApp number</label>
-              <input type="tel" value="<?php echo htmlspecialchars($businessPhoneIntl); ?>">
+              <input type="tel" value="27219100519">
             </div>
           </div>
           <div class="modal-row">
             <div class="modal-field">
               <label>Open days</label>
-              <input type="text" value="<?php echo htmlspecialchars($businessOpenDays); ?>">
+              <input type="text" value="Tuesday – Saturday">
             </div>
             <div class="modal-field">
               <label>Hours</label>
-              <input type="text" value="<?php echo htmlspecialchars($businessHours); ?>">
+              <input type="text" value="09:00 – 18:00">
             </div>
           </div>
-          <div class="form-note" style="margin:-8px 0 14px; font-size:0.78rem; color:var(--muted);">Edit these values in config.php — this panel is a read-only summary.</div>
-          <button class="btn btn-clay" onclick="showToast('Business info saved.')">Save changes</button>
+          <button class="btn btn-clay" onclick="showToast('Salon info saved.')">Save changes</button>
         </div>
       </div>
     </div>
@@ -1339,7 +1361,7 @@ if (!$mysqli->connect_error) {
       <div class="modal-row">
         <div class="modal-field">
           <label>Client name</label>
-          <input type="text" id="mnb-name" placeholder="e.g. Jane Smith">
+          <input type="text" id="mnb-name" placeholder="e.g. Nomvula Dlamini">
         </div>
         <div class="modal-field">
           <label>Phone</label>
@@ -1351,9 +1373,12 @@ if (!$mysqli->connect_error) {
           <label>Service</label>
           <select id="mnb-service">
             <option value="" disabled selected>Choose</option>
-            <?php foreach ($services as $serviceName => $servicePrice): ?>
-            <option><?php echo htmlspecialchars($serviceName); ?></option>
-            <?php endforeach; ?>
+            <option>Cut &amp; Trim</option>
+            <option>Braids &amp; Cornrows</option>
+            <option>Weave / Extensions</option>
+            <option>Colour &amp; Highlights</option>
+            <option>Wash, Treat &amp; Blow-dry</option>
+            <option>Beard Shape-up</option>
           </select>
         </div>
       </div>
@@ -1365,16 +1390,16 @@ if (!$mysqli->connect_error) {
         <div class="modal-field">
           <label>Time</label>
           <select id="mnb-time">
-            <?php foreach ($timeSlots as $slot): ?>
-            <option><?php echo htmlspecialchars($slot); ?></option>
-            <?php endforeach; ?>
+            <option>09:00</option><option>10:00</option><option>11:00</option>
+            <option>12:00</option><option>13:00</option><option>14:00</option>
+            <option>15:00</option><option>16:00</option><option>17:00</option>
           </select>
-          <div id="mnb-booked-msg" style="display:none; margin-top:6px; font-family:'Inter',sans-serif; font-size:0.72rem; color:var(--clay);">This day is fully booked.</div>
+          <div id="mnb-booked-msg" style="display:none; margin-top:6px; font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--clay);">This day is fully booked.</div>
         </div>
       </div>
       <div class="modal-field">
         <label>Notes (optional)</label>
-        <textarea id="mnb-notes" placeholder="Notes, preferences, special requests…"></textarea>
+        <textarea id="mnb-notes" placeholder="Hair length, preferences, special requests…"></textarea>
       </div>
     </div>
     <div class="modal-foot">
@@ -1391,19 +1416,38 @@ if (!$mysqli->connect_error) {
 
 <script>
 // ===== DATA =====
-const BUSINESS = <?php echo json_encode(['name' => $businessName, 'phone' => $businessPhone, 'phoneIntl' => $businessPhoneIntl], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-
-const SERVICES = <?php echo json_encode(array_map(fn($name) => ['name' => $name, 'count' => 0, 'revenue' => 0], array_keys($services)), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+const SERVICES = [
+  { name: 'Weave / Extensions', count: 0, revenue: 0 },
+  { name: 'Braids & Cornrows', count: 0, revenue: 0 },
+  { name: 'Cut & Trim', count: 0, revenue: 0 },
+  { name: 'Colour & Highlights', count: 0, revenue: 0 },
+  { name: 'Wash, Treat & Blow-dry', count: 0, revenue: 0 },
+  { name: 'Beard Shape-up', count: 0, revenue: 0 },
+];
 
 const today = new Date();
 const todayStr = today.toISOString().split('T')[0];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const bookings = <?php echo json_encode($bookings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
 let nextId = <?php echo count($bookings) + 1; ?>;
 
-const PRICES = <?php echo json_encode($services, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+function offsetDate(days) {
+  const d = new Date(today);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+const PRICES = {
+  'Cut & Trim': 160,
+  'Braids & Cornrows': 300,
+  'Weave / Extensions': 550,
+  'Colour & Highlights': 400,
+  'Wash, Treat & Blow-dry': 180,
+  'Beard Shape-up': 90,
+};
 
 function prettyDate(d) {
   if (!d) return '';
@@ -1426,7 +1470,7 @@ const panelTitles = {
   bookings: "All Bookings",
   new: "Add Booking",
   services: "Services & Revenue",
-  settings: "Business Info"
+  settings: "Salon Info"
 };
 
 function switchPanel(name) {
@@ -1449,7 +1493,7 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(el => {
 document.getElementById('topbarDate').textContent =
   today.toLocaleDateString('en-ZA', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 document.getElementById('topbarSub').textContent =
-  DAYS[today.getDay()] + ' · ' + BUSINESS.name;
+  DAYS[today.getDay()] + ' · Old Oak Centre, Belair';
 
 function statusLabel(s) {
   if (s === 'complete') return 'Complete';
@@ -1604,7 +1648,7 @@ function openDetailModal(id) {
   waBtn.style.color = '#128C7E';
   waBtn.style.borderColor = '#128C7E';
   waBtn.textContent = 'WhatsApp';
-  waBtn.href = `https://wa.me/${b.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`Hi ${b.name.split(' ')[0]}, your booking at ${BUSINESS.name} is set for ${b.service} on ${prettyDate(b.date)} at ${b.time}. See you then!`)}`;
+  waBtn.href = `https://wa.me/${b.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`Hi ${b.name.split(' ')[0]}, your booking at The Style Bay is set for ${b.service} on ${prettyDate(b.date)} at ${b.time}. See you then! 👑`)}`;
   waBtn.target = '_blank';
   waBtn.rel = 'noopener';
   actions.appendChild(waBtn);
@@ -1757,6 +1801,58 @@ async function saveNewBooking() {
       }
     }).catch(() => alert('Could not reach server.'));
 }
+
+// ===== CALENDAR =====
+let calOffset = 0;
+
+function renderCal() {
+  const d = new Date(today.getFullYear(), today.getMonth() + calOffset, 1);
+  document.getElementById('calMonthLabel').textContent = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  dows.forEach(dow => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = dow;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(d.getFullYear(), d.getMonth(), 1).getDay();
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  const prevDays = new Date(d.getFullYear(), d.getMonth(), 0).getDate();
+
+  // Prev month padding
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other-month';
+    el.textContent = prevDays - i;
+    grid.appendChild(el);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const el = document.createElement('div');
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow = new Date(dateStr + 'T00:00:00').getDay();
+    el.className = 'cal-day';
+    el.textContent = day;
+
+    if (dow === 0 || dow === 1) el.classList.add('closed'); // Sun/Mon
+    if (dateStr === todayStr) el.classList.add('today');
+    if (bookings.some(b => b.date === dateStr)) el.classList.add('has-booking');
+
+    el.addEventListener('click', () => {
+      document.getElementById('filterDate').value = dateStr;
+      switchPanel('bookings');
+      renderBookingsTable();
+    });
+
+    grid.appendChild(el);
+  }
+}
+
+function shiftCal(dir) { calOffset += dir; renderCal(); }
 
 // ===== MODAL HELPERS =====
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1926,6 +2022,7 @@ document.getElementById('mnb-date').addEventListener('change', function() {
 // ===== INIT =====
 renderBookingsTable();
 updateBookingStats();
+renderCal();
 
 // Set today as min for new booking date fields
 document.getElementById('nb-date').min = todayStr;

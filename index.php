@@ -1,5 +1,9 @@
 <?php
-require __DIR__ . '/config.php';
+$dbHost = 'localhost';
+$dbUser = 'root';
+$dbPass = '';
+$dbName = 'dbTheStyleBay';
+$dbTable = 'tblbookings';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json; charset=utf-8');
@@ -11,7 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     $time = trim($_POST['time'] ?? '');
     $notes = trim($_POST['notes'] ?? '');
 
-    $price = $services[$service] ?? 0;
+    $prices = [
+        'Cut & Trim' => 160,
+        'Braids & Cornrows' => 300,
+        'Weave / Extensions' => 550,
+        'Colour & Highlights' => 400,
+        'Wash, Treat & Blow-dry' => 180,
+        'Beard Shape-up' => 90,
+        'Not sure — advise me' => 0,
+    ];
+    $price = $prices[$service] ?? 0;
 
     if (!$name || !$phone || !$service || !$date || !$time) {
         http_response_code(400);
@@ -83,23 +96,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $stmt->bind_param('s', $date);
     $stmt->execute();
     $result = $stmt->get_result();
-
+    
     $bookedSlots = [];
     while ($row = $result->fetch_assoc()) {
         $bookedSlots[] = substr($row['Time'], 0, 5);
     }
-
+    
     $stmt->close();
     $mysqli->close();
-
-    $isFullyBooked = count($bookedSlots) === count($timeSlots);
-
+    
+    // All available time slots
+    $allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+    $isFullyBooked = count($bookedSlots) === count($allSlots);
+    
     echo json_encode([
         'success' => true,
         'date' => $date,
         'bookedSlots' => $bookedSlots,
         'isFullyBooked' => $isFullyBooked,
-        'availableSlots' => array_values(array_diff($timeSlots, $bookedSlots))
+        'availableSlots' => array_values(array_diff($allSlots, $bookedSlots))
     ]);
     exit;
 }
@@ -109,28 +124,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo htmlspecialchars($businessName); ?> — Book an Appointment</title>
-<meta name="description" content="<?php echo htmlspecialchars($businessName . '. ' . $businessTagline); ?>">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%85%3C/text%3E%3C/svg%3E">
+<title>The Style Bay — Unisex Hair Salon, Belair</title>
+<meta name="description" content="The Style Bay Unisex Hair Salon, Old Oak Centre, Belair, Cape Town. Cuts, braids, weaves, colour and grooming. Come as a stranger, leave as family. Book your chair online.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%91%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<<<<<<< HEAD
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0F172A;
-    --bay:#1E293B;
-    --bay-light:#334155;
-    --gold:#2563EB;
-    --gold-soft:#93C5FD;
-    --clay:#334155;
-    --sand:#F8FAFC;
-    --sand-deep:#E2E8F0;
-    --ink-warm:#1E293B;
-    --cream:#FFFFFF;
-    --line-dark: rgba(255,255,255,0.14);
-    --line-light: rgba(15,23,42,0.10);
-    --radius: 6px;
+    --ink:#0E1722;
+    --bay:#152537;
+    --bay-light:#23405C;
+    --gold:#CFA052;
+    --gold-soft:#E8C988;
+    --clay:#B5562F;
+    --sand:#F1E8D8;
+    --sand-deep:#E3D4B7;
+    --ink-warm:#241B12;
+    --cream:#FAF6EC;
+    --line-dark: rgba(232,201,136,0.22);
+    --line-light: rgba(36,27,18,0.14);
+    --radius: 2px;
     --maxw: 1180px;
   }
 
@@ -145,14 +159,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     margin:0;
     background:var(--sand);
     color:var(--ink-warm);
-    font-family:'Inter', sans-serif;
+    font-family:'Work Sans', sans-serif;
     font-size:16px;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
   }
 
   h1,h2,h3{
-    font-family:'Inter', sans-serif;
+    font-family:'Fraunces', serif;
     font-weight:600;
     margin:0;
     letter-spacing:-0.01em;
@@ -161,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
   a{color:inherit;}
 
   .eyebrow{
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.72rem;
     letter-spacing:0.22em;
     text-transform:uppercase;
@@ -203,8 +217,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     color:var(--cream);
     text-decoration:none;
   }
+  .brand svg{width:0px;height:0px;flex-shrink:0;}
   .brand-name{
-    font-family:'Inter', sans-serif;
+    font-family:'Fraunces', serif;
     font-weight:600;
     font-size:1.18rem;
     letter-spacing:0.01em;
@@ -239,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     display:none;
     background:none; border:1px solid var(--line-dark);
     color:var(--cream); padding:8px 12px; border-radius:var(--radius);
-    font-family:'Inter', sans-serif; font-size:0.8rem;
+    font-family:'Space Mono', monospace; font-size:0.8rem;
     cursor:pointer;
   }
 
@@ -297,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     margin-bottom:54px;
   }
   .btn{
-    font-family:'Inter', sans-serif;
+    font-family:'Work Sans', sans-serif;
     font-weight:600;
     font-size:0.95rem;
     padding:14px 28px;
@@ -318,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
   .hero-meta{
     display:flex; gap:38px; flex-wrap:wrap;
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.8rem;
     color:rgba(250,246,236,0.65);
     border-top:1px solid var(--line-dark);
@@ -363,16 +378,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     display:flex; justify-content:space-between; gap:18px;
   }
   .stat-card .label{
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
     color:#7A6644; padding-top:3px;
   }
   .stat-card .value{
-    font-family:'Inter', sans-serif; font-size:1.05rem; font-weight:500;
+    font-family:'Fraunces', serif; font-size:1.05rem; font-weight:500;
     text-align:right;
   }
   .stat-card .value small{
-    display:block; font-family:'Inter'; font-weight:400;
+    display:block; font-family:'Work Sans'; font-weight:400;
     font-size:0.82rem; color:#7A6644; margin-top:2px;
   }
 
@@ -395,7 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     min-height:200px;
   }
   .service-card .num{
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.72rem; color:var(--clay);
     letter-spacing:0.1em;
   }
@@ -407,7 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     margin:0; flex-grow:1;
   }
   .service-card .price{
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.85rem; color:var(--gold-soft);
     border-top:1px solid var(--line-dark);
     padding-top:14px;
@@ -419,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     margin-top:24px;
     font-size:0.82rem;
     color:rgba(250,246,236,0.5);
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
   }
 
   /* ---------- BOOKING ---------- */
@@ -440,11 +455,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     padding:48px 42px;
     position:relative;
   }
+  .booking-info .tide-bg{
+    position:absolute; inset:0; opacity:0.18; pointer-events:none;
+  }
   .booking-info h3{font-size:1.7rem; margin-bottom:18px; position:relative;}
   .booking-info p{color:rgba(250,246,236,0.75); position:relative; max-width:34ch;}
   .booking-info ul{
     list-style:none; padding:0; margin:30px 0 0;
-    font-family:'Inter', sans-serif; font-size:0.82rem;
+    font-family:'Space Mono', monospace; font-size:0.82rem;
     color:rgba(250,246,236,0.85);
     display:flex; flex-direction:column; gap:12px;
     position:relative;
@@ -459,12 +477,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
   .field{margin-bottom:20px;}
   .field label{
     display:block; font-size:0.78rem; letter-spacing:0.06em;
-    text-transform:uppercase; font-family:'Inter', sans-serif;
+    text-transform:uppercase; font-family:'Space Mono', monospace;
     color:#5F4E32; margin-bottom:8px;
   }
   .field input, .field select, .field textarea{
     width:100%;
-    font-family:'Inter', sans-serif;
+    font-family:'Work Sans', sans-serif;
     font-size:0.96rem;
     padding:12px 14px;
     border:1px solid var(--line-light);
@@ -484,7 +502,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     gap:8px;
   }
   .slot{
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.82rem;
     padding:10px 6px;
     text-align:center;
@@ -527,17 +545,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
   }
   .confirm-panel.show{display:block;}
   .confirm-panel h4{
-    font-family:'Inter', sans-serif; font-size:1.1rem; margin-bottom:10px;
+    font-family:'Fraunces', serif; font-size:1.1rem; margin-bottom:10px;
   }
   .confirm-panel .summary{
-    font-family:'Inter', sans-serif; font-size:0.82rem;
+    font-family:'Space Mono', monospace; font-size:0.82rem;
     color:#473521; white-space:pre-line; margin-bottom:18px;
     line-height:1.7;
   }
   .confirm-actions{display:flex; gap:10px; flex-wrap:wrap;}
   .confirm-actions .btn{padding:10px 18px; font-size:0.85rem;}
   .toast{
-    font-family:'Inter', sans-serif;
+    font-family:'Space Mono', monospace;
     font-size:0.76rem;
     color:var(--clay);
     margin-top:10px;
@@ -606,47 +624,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 </head>
 <body>
 
-<?php
-$telDigits = preg_replace('/\D/', '', $businessPhoneIntl);
-$telHref = 'tel:+' . $telDigits;
-$waHref = 'https://wa.me/' . $telDigits;
-$mapQuery = urlencode($businessAddress);
-?>
 <header id="siteHeader">
   <div class="wrap header-row">
     <a href="#home" class="brand">
-      <span class="brand-name"><?php echo htmlspecialchars($businessName); ?></span>
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M3 22c2.5-3 4.5-3 7 0s4.5 3 7 0 4.5-3 7 0 4.5 3 5 0" stroke="#CFA052" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M5 18 9 7l4 8 3-9 3 9 4-8 4 11" stroke="#E8C988" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span class="brand-name">The&nbsp;Style&nbsp;Bay</span>
     </a>
     <input type="checkbox" id="navToggle" class="nav-toggle">
     <label for="navToggle" class="menu-btn">MENU</label>
     <nav class="main-nav">
-      <a href="#about">About</a>
+      <a href="#about">Our Bay</a>
       <a href="#services">Services</a>
       <a href="#booking">Book</a>
-      <a href="#visit">Location</a>
-      <a href="#booking" class="cta">Book Now</a>
+      <a href="#visit">Visit</a>
+      <a href="#booking" class="cta">Book your chair</a>
     </nav>
   </div>
 </header>
 
 <section class="hero" id="home">
   <div class="wrap hero-inner">
-    <span class="eyebrow">Online Booking</span>
-    <h1><?php echo htmlspecialchars($businessTagline); ?></h1>
-    <p class="lede"><?php echo htmlspecialchars($businessBlurb); ?></p>
+    <span class="eyebrow">Unisex hair salon · Old Oak Centre, Belair</span>
+    <h1>Come as a stranger,<br>leave as <em>family.</em></h1>
+    <p class="lede">Cuts, braids, weaves and colour for every crown in the family — men, women and kids. Take a walk with us, sit in the chair, and let us take care of the rest.</p>
     <div class="hero-actions">
-      <a href="#booking" class="btn btn-gold">Book Now →</a>
-      <a href="<?php echo htmlspecialchars($telHref); ?>" class="btn btn-ghost">Call <?php echo htmlspecialchars($businessPhone); ?></a>
+      <a href="#booking" class="btn btn-gold">Book your chair →</a>
+      <a href="tel:+27219100519" class="btn btn-ghost">Call 021 910 0519</a>
     </div>
     <div class="hero-meta">
-      <div><strong>Address</strong><br><?php echo htmlspecialchars($businessAddress); ?></div>
-      <div><strong>Hours</strong><br><?php echo htmlspecialchars($businessOpenDays); ?> · <?php echo htmlspecialchars($businessHours); ?></div>
-      <div><strong>Contact</strong><br><?php echo htmlspecialchars($businessPhone); ?></div>
+      <div><strong>Address</strong><br>39 Meerlust St, Old Oak Centre, Belair, Cape Town</div>
+      <div><strong>Hours</strong><br>Tue – Sat · 09:00 – 18:00</div>
+      <div><strong>Specialty</strong><br>Hair extensions &amp; weaves</div>
     </div>
   </div>
   <div class="wave" aria-hidden="true">
     <svg viewBox="0 0 1200 90" preserveAspectRatio="none">
-      <path d="M0,55 C150,20 300,80 450,50 C600,20 750,80 900,50 C1050,20 1150,55 1200,45 L1200,90 L0,90 Z" fill="#F8FAFC"/>
+      <path d="M0,55 C150,20 300,80 450,50 C600,20 750,80 900,50 C1050,20 1150,55 1200,45 L1200,90 L0,90 Z" fill="#F1E8D8"/>
     </svg>
   </div>
 </section>
@@ -655,24 +671,28 @@ $mapQuery = urlencode($businessAddress);
   <div class="wrap about-grid">
     <div>
       <div class="section-head">
-        <span class="eyebrow">About</span>
-        <h2>About <?php echo htmlspecialchars($businessName); ?></h2>
+        <span class="eyebrow">Our Bay</span>
+        <h2>A chair for everyone, a story for every crown</h2>
       </div>
-      <p><?php echo htmlspecialchars($businessBlurb); ?></p>
-      <p style="margin-top:16px;">Book ahead online below, and we'll confirm your appointment.</p>
+      <p>The Style Bay sits in the Old Oak Centre in Belair — a small, easy-to-find salon with a big family feel. We work on every hair type and every age, from a quick kid's trim to a full set of braids or extensions. No appointment ever feels rushed, and nobody leaves without a mirror check they're happy with.</p>
+      <p style="margin-top:16px;">Walk in, or book ahead online below — either way, you'll be looked after.</p>
     </div>
     <div class="stat-cards">
       <div class="stat-card">
         <div class="label">Address</div>
-        <div class="value"><?php echo htmlspecialchars($businessAddress); ?></div>
+        <div class="value">Old Oak Centre<small>39 Meerlust St, Belair, Cape Town</small></div>
       </div>
       <div class="stat-card">
         <div class="label">Phone</div>
-        <div class="value"><a href="<?php echo htmlspecialchars($telHref); ?>"><?php echo htmlspecialchars($businessPhone); ?></a><small>Call or WhatsApp</small></div>
+        <div class="value"><a href="tel:+27219100519">021 910 0519</a><small>Call or WhatsApp</small></div>
       </div>
       <div class="stat-card">
         <div class="label">Hours</div>
-        <div class="value"><?php echo htmlspecialchars($businessOpenDays); ?><small><?php echo htmlspecialchars($businessHours); ?></small></div>
+        <div class="value">Tue – Sat<small>09:00 – 18:00, closed Sun &amp; Mon</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">For</div>
+        <div class="value">Men · Women · Kids<small>unisex, all hair types</small></div>
       </div>
     </div>
   </div>
@@ -682,34 +702,67 @@ $mapQuery = urlencode($businessAddress);
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">What We Do</span>
-      <h2>Our Services</h2>
+      <h2>Every service, one chair</h2>
     </div>
     <div class="service-grid">
-      <?php $num = 1; foreach ($services as $serviceName => $servicePrice): ?>
       <div class="service-card">
-        <span class="num"><?php echo str_pad($num++, 2, '0', STR_PAD_LEFT); ?></span>
-        <h3><?php echo htmlspecialchars($serviceName); ?></h3>
-        <p>Describe this service here — what it includes and what makes it worth booking.</p>
-        <div class="price">from R<?php echo htmlspecialchars($servicePrice); ?></div>
+        <span class="num">01</span>
+        <h3>Cuts &amp; Trims</h3>
+        <p>Men's, women's and kids' cuts — sharp lines, soft fades or a simple tidy-up.</p>
+        <div class="price">from R120</div>
       </div>
-      <?php endforeach; ?>
+      <div class="service-card">
+        <span class="num">02</span>
+        <h3>Braids &amp; Cornrows</h3>
+        <p>Classic cornrows, box braids and protective styles, sized to your hair and your day.</p>
+        <div class="price">from R250</div>
+      </div>
+      <div class="service-card">
+        <span class="num">03</span>
+        <h3>Weaves &amp; Extensions</h3>
+        <p>Our specialty. Sew-ins, closures and full installs, fitted and blended to last.</p>
+        <div class="price">from R450</div>
+      </div>
+      <div class="service-card">
+        <span class="num">04</span>
+        <h3>Colour &amp; Highlights</h3>
+        <p>Full colour, highlights and toning — done with a patch test and a plan first.</p>
+        <div class="price">from R350</div>
+      </div>
+      <div class="service-card">
+        <span class="num">05</span>
+        <h3>Wash, Treat &amp; Blow-dry</h3>
+        <p>Deep treatment, scalp care and a finish you can walk straight out the door with.</p>
+        <div class="price">from R150</div>
+      </div>
+      <div class="service-card">
+        <span class="num">06</span>
+        <h3>Beard Shape-up</h3>
+        <p>Lined, trimmed and tidied — usually booked together with a cut.</p>
+        <div class="price">from R80</div>
+      </div>
     </div>
-    <div class="services-note">Prices are starting estimates — final price may vary. Ask us for an exact quote.</div>
+    <div class="services-note">Prices are starting estimates — final price depends on hair length and style. Ask in salon for an exact quote.</div>
   </div>
 </section>
 
 <section id="booking">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">Book an Appointment</span>
+      <span class="eyebrow">Reserve Your Chair</span>
       <h2>Pick a service, a day, a time</h2>
     </div>
 
     <div class="booking-shell">
       <div class="booking-grid">
         <div class="booking-info">
+          <svg class="tide-bg" viewBox="0 0 400 400" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,80 C100,40 200,120 300,80 C350,60 380,90 400,80" stroke="#CFA052" stroke-width="2" fill="none"/>
+            <path d="M0,180 C100,140 200,220 300,180 C350,160 380,190 400,180" stroke="#CFA052" stroke-width="2" fill="none"/>
+            <path d="M0,280 C100,240 200,320 300,280 C350,260 380,290 400,280" stroke="#CFA052" stroke-width="2" fill="none"/>
+          </svg>
           <h3>How booking works</h3>
-          <p>Fill in your details and pick a slot. We don't take payment online — your request is sent straight to us to confirm.</p>
+          <p>Fill in your details and pick a slot. We don't take payment online — your request is sent straight to the salon to confirm.</p>
           <ul>
             <li>Choose your service &amp; preferred time</li>
             <li>Please give us a call to cancel</li>
@@ -718,7 +771,7 @@ $mapQuery = urlencode($businessAddress);
         <form class="booking-form" id="bookingForm">
           <div class="field">
             <label for="bf-name">Full name</label>
-            <input type="text" id="bf-name" name="name" required placeholder="e.g. Jane Smith">
+            <input type="text" id="bf-name" name="name" required placeholder="e.g. Thandi Joubert">
           </div>
           <div class="two-col">
             <div class="field">
@@ -729,9 +782,12 @@ $mapQuery = urlencode($businessAddress);
               <label for="bf-service">Service</label>
               <select id="bf-service" name="service" required>
                 <option value="" disabled selected>Choose a service</option>
-                <?php foreach ($services as $serviceName => $servicePrice): ?>
-                <option><?php echo htmlspecialchars($serviceName); ?></option>
-                <?php endforeach; ?>
+                <option>Cut &amp; Trim</option>
+                <option>Braids &amp; Cornrows</option>
+                <option>Weave / Extensions</option>
+                <option>Colour &amp; Highlights</option>
+                <option>Wash, Treat &amp; Blow-dry</option>
+                <option>Beard Shape-up</option>
               </select>
             </div>
           </div>
@@ -744,16 +800,16 @@ $mapQuery = urlencode($businessAddress);
             <div class="slot-grid" id="slotGrid" role="group" aria-label="Preferred time">
               <!-- slots injected by JS -->
             </div>
-            <div id="slotMessage" style="display:none; margin-top:10px; font-family:'Inter',sans-serif; font-size:0.78rem; color:var(--clay);">This day is fully booked — please choose another date.</div>
+            <div id="slotMessage" style="display:none; margin-top:10px; font-family:'Space Mono',monospace; font-size:0.78rem; color:var(--clay);">This day is fully booked — please choose another date.</div>
             <input type="hidden" id="bf-time" name="time">
           </div>
           <div class="field">
             <label for="bf-notes">Anything we should know? (optional)</label>
-            <textarea id="bf-notes" name="notes" placeholder="Notes, preferences, special requests…"></textarea>
+            <textarea id="bf-notes" name="notes" placeholder="Hair length, reference photo, stylist preference…"></textarea>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-clay">Submit booking</button>
-            <div class="form-note">Your booking will be saved. If you want to verify your booking, please call <?php echo htmlspecialchars($businessPhone); ?>.</div>
+            <div class="form-note">Your booking will be saved. If you want to verify your booking, please call 021 910 0519.</div>
           </div>
           <div class="toast" id="bookingToast" style="margin-top:12px; opacity:0; transition:opacity 0.25s;">Booking saved successfully.</div>
         </form>
@@ -766,22 +822,23 @@ $mapQuery = urlencode($businessAddress);
   <div class="wrap">
     <div class="section-head">
       <span class="eyebrow">Find Us</span>
-      <h2>Our Location</h2>
+      <h2>Old Oak Centre, Belair</h2>
     </div>
     <div class="visit-grid">
       <div class="visit-card">
         <span class="eyebrow">Details</span>
-        <h3><?php echo htmlspecialchars($businessName); ?></h3>
-        <span class="line"><?php echo htmlspecialchars($businessAddress); ?></span>
-        <a class="line" href="<?php echo htmlspecialchars($telHref); ?>"><?php echo htmlspecialchars($businessPhone); ?></a>
-        <span class="line"><?php echo htmlspecialchars($businessOpenDays); ?> · <?php echo htmlspecialchars($businessHours); ?></span>
+        <h3>The Style Bay Unisex Hair Salon</h3>
+        <span class="line">39 Meerlust St, Old Oak Centre<br>Belair, Cape Town, South Africa</span>
+        <a class="line" href="tel:+27219100519">021 910 0519</a>
+        <a class="line" href="https://www.facebook.com/thestylebayunisexhairsalon/" target="_blank" rel="noopener">Facebook — @thestylebayunisexhairsalon</a>
+        <span class="line">Tue – Sat · 09:00 – 18:00 · Closed Sun &amp; Mon</span>
       </div>
       <div class="visit-card map-card" style="padding:0;">
         <iframe
-          src="https://www.google.com/maps?q=<?php echo $mapQuery; ?>&output=embed"
+          src="https://www.google.com/maps?q=Old+Oak+Centre,+39+Meerlust+St,+Belair,+Cape+Town&output=embed"
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"
-          title="Map to <?php echo htmlspecialchars($businessName); ?>"></iframe>
+          title="Map to The Style Bay Unisex Hair Salon, Old Oak Centre, Belair, Cape Town"></iframe>
       </div>
     </div>
   </div>
@@ -789,20 +846,18 @@ $mapQuery = urlencode($businessAddress);
 
 <footer>
   <div class="wrap footer-row">
-    <span class="brand-name" style="font-family:'Inter',sans-serif;"><?php echo htmlspecialchars($businessName); ?></span>
+    <span class="brand-name" style="font-family:'Fraunces',serif;">The Style Bay</span>
     <div class="footer-links">
-      <a href="#about">About</a>
+      <a href="#about">Our Bay</a>
       <a href="#services">Services</a>
       <a href="#booking">Book</a>
+      <a href="https://www.facebook.com/thestylebayunisexhairsalon/" target="_blank" rel="noopener">Facebook</a>
     </div>
-    <span>© <span id="year"></span> <?php echo htmlspecialchars($businessName); ?></span>
+    <span>© <span id="year"></span> The Style Bay Unisex Hair Salon</span>
   </div>
 </footer>
 
 <script>
-  const BUSINESS_PHONE = <?php echo json_encode($businessPhone); ?>;
-  const TIME_SLOTS = <?php echo json_encode($timeSlots); ?>;
-
   // header scroll state
   const header = document.getElementById('siteHeader');
   window.addEventListener('scroll', () => {
@@ -824,7 +879,7 @@ $mapQuery = urlencode($businessAddress);
 
   // time slots
   const slotGrid = document.getElementById('slotGrid');
-  const allSlots = TIME_SLOTS;
+  const allSlots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
   const slotButtons = {};
   let selectedSlot = null;
   let bookedSlotsForDate = [];
@@ -944,7 +999,7 @@ $mapQuery = urlencode($businessAddress);
       return;
     }
 
-    bookingToast.textContent = 'Your booking has been saved. Call ' + BUSINESS_PHONE + ' if you want to verify it.';
+    bookingToast.textContent = 'Your booking has been saved. Call 021 910 0519 if you want to verify it.';
     bookingToast.style.opacity = '1';
     setTimeout(() => {
       bookingToast.style.opacity = '0';
