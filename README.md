@@ -142,7 +142,7 @@ Responsibilities include:
 
 # Architecture
 
-![BMS Architecture](docMedia/architecture.png)
+![BMS Architecture](docMedia/BMS architecture.png)
 
 ---
 
